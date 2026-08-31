@@ -1,5 +1,25 @@
 import type { Opportunity, InterviewRound } from '../types';
 
+export type ActionType =
+  | 'follow_up'
+  | 'add_next_round'
+  | 'fill_offer'
+  | 'pending_overdue'
+  | 'status_inconsistent';
+
+export type ActionSeverity = 'red' | 'yellow' | 'blue';
+
+export interface ActionItem {
+  type: ActionType;
+  severity: ActionSeverity;
+  opportunity_id: number;
+  company: string;
+  position: string;
+  message: string;
+  hint: string;
+  days_idle?: number;
+}
+
 const BASE = '/api';
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -47,5 +67,8 @@ export const api = {
       }),
     remove: (id: number) =>
       request<void>(`/rounds/${id}`, { method: 'DELETE' }),
+  },
+  actionItems: {
+    list: () => request<{ items: ActionItem[] }>(`/action-items`),
   },
 };

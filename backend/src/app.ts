@@ -4,6 +4,7 @@ import type Database from 'better-sqlite3';
 import { createOpportunitiesRouter } from './routes/opportunities.js';
 import { createRoundsRouter } from './routes/rounds.js';
 import { createParseRouter } from './routes/parse.js';
+import { createActionItemsRouter } from './routes/actionItems.js';
 
 export function createApp(db: Database.Database): Express {
   const app = express();
@@ -12,5 +13,6 @@ export function createApp(db: Database.Database): Express {
   app.use('/api/opportunities', createOpportunitiesRouter(db));
   app.use('/api', createRoundsRouter(db));
   app.use('/api', createParseRouter());
+  app.use('/api/action-items', createActionItemsRouter(db));
   return app;
 }

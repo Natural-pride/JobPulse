@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import type { ActionItem as ApiActionItem } from '../api/client';
 import type { Opportunity, InterviewRound } from '../types';
 import StatCard from '../components/StatCard';
 import { ROUND_TYPE_META, FORMAT_META } from '../lib/status';
@@ -16,6 +17,7 @@ import ConversionFunnel from '../components/dashboard/ConversionFunnel';
 import SourceDistribution from '../components/dashboard/SourceDistribution';
 import RecentActivity from '../components/dashboard/RecentActivity';
 import ActivityHeatmap from '../components/dashboard/ActivityHeatmap';
+import ActionItems from '../components/dashboard/ActionItems';
 
 interface DashboardData {
   opportunity: Opportunity;
@@ -25,13 +27,17 @@ interface DashboardData {
 export default function Dashboard() {
   useDocumentTitle('概览');
   const [data, setData] = useState<DashboardData[]>([]);
+  const [actionItems, setActionItems] = useState<ApiActionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const opps = await api.opportunities.list();
+        const [opps, actionRes] = await Promise.all([
+          api.opportunities.list(),
+          api.actionItems.list().catch(() => ({ items: [] as ApiActionItem[] })),
+        ]);
         const all = await Promise.all(
           opps.map(async (opp) => ({
             opportunity: opp,
@@ -39,6 +45,7 @@ export default function Dashboard() {
           }))
         );
         setData(all);
+        setActionItems(actionRes.items);
       } catch (e) {
         setError(e instanceof Error ? e.message : '加载失败');
       } finally {
@@ -126,6 +133,11 @@ export default function Dashboard() {
             <span>新建面试</span>
           </Link>
         </div>
+      </div>
+
+      {/* Row 0: Action items (needs attention) */}
+      <div className="mb-4">
+        <ActionItems items={actionItems} />
       </div>
 
       {/* Row 1: 4 stat cards */}
