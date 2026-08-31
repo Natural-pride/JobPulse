@@ -18,7 +18,7 @@ const STATUS_DOT: Record<OpportunityStatus, string> = {
   accepted_then_left: 'bg-amber-500',
 };
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 export default function OpportunityList() {
   useDocumentTitle('面试机会');
