@@ -26,6 +26,115 @@ const empty: FormState = {
   notes: '',
 };
 
+const SALARY_RANGES = [
+  { value: '', label: '（不填）' },
+  { value: '8-10K', label: '8-10K' },
+  { value: '10-12K', label: '10-12K' },
+  { value: '12-15K', label: '12-15K' },
+  { value: '15-20K', label: '15-20K' },
+  { value: '20-25K', label: '20-25K' },
+  { value: '25-30K', label: '25-30K' },
+  { value: '30-40K', label: '30-40K' },
+  { value: '40-50K', label: '40-50K' },
+  { value: '50K+', label: '50K+' },
+  { value: '__custom__', label: '自定义...' },
+];
+
+const SALARY_MONTHS = [
+  { value: '', label: '（不填）' },
+  { value: '12', label: '12 薪' },
+  { value: '13', label: '13 薪' },
+  { value: '14', label: '14 薪' },
+  { value: '15', label: '15 薪' },
+  { value: '16', label: '16 薪' },
+];
+
+const WORK_HOURS_PRESETS = [
+  { value: '', label: '（不填）' },
+  { value: '9:00-18:00', label: '9:00-18:00' },
+  { value: '9:30-18:30', label: '9:30-18:30' },
+  { value: '10:00-19:00', label: '10:00-19:00' },
+  { value: '9:00-17:30', label: '9:00-17:30' },
+  { value: '弹性工作', label: '弹性工作' },
+  { value: '955', label: '955' },
+  { value: '996', label: '996' },
+  { value: '007', label: '007' },
+  { value: '__custom__', label: '自定义...' },
+];
+
+const BENEFIT_TAGS = [
+  '五险一金', '六险一金', '补充医疗', '年终奖', '股票期权',
+  '餐补', '房补', '交通补', '弹性工作', '远程办公',
+  '体检', '团建', '培训', '带薪年假', '加班费',
+  '节日福利', '健身房', '免费零食',
+];
+
+function parseSalary(s: string | null): { preset: string; custom: string; months: string } {
+  if (!s) return { preset: '', custom: '', months: '' };
+  const m = s.match(/^(.+?)\*(\d+)$/);
+  if (m) {
+    const range = m[1];
+    const months = m[2];
+    const match = SALARY_RANGES.find((r) => r.value === range);
+    return {
+      preset: match ? match.value : '__custom__',
+      custom: match ? '' : range,
+      months,
+    };
+  }
+  const match = SALARY_RANGES.find((r) => r.value === s);
+  return {
+    preset: match ? match.value : '__custom__',
+    custom: match ? '' : s,
+    months: '',
+  };
+}
+
+function buildSalary(preset: string, custom: string, months: string): string | null {
+  const range = preset === '__custom__' ? custom.trim() : preset;
+  if (!range) return null;
+  return months ? `${range}*${months}` : range;
+}
+
+function parseWorkHours(s: string | null): { preset: string; custom: string } {
+  if (!s) return { preset: '', custom: '' };
+  const match = WORK_HOURS_PRESETS.find((p) => p.value === s);
+  return {
+    preset: match ? match.value : '__custom__',
+    custom: match ? '' : s,
+  };
+}
+
+function buildWorkHours(preset: string, custom: string): string | null {
+  const value = preset === '__custom__' ? custom.trim() : preset;
+  return value || null;
+}
+
+function parseBenefits(s: string | null): { selected: Set<string>; other: string } {
+  const selected = new Set<string>();
+  let other = '';
+  if (!s) return { selected, other };
+  const parts = s.split(/[、,,;；\s]+/).filter(Boolean);
+  const otherParts: string[] = [];
+  for (const p of parts) {
+    if (BENEFIT_TAGS.includes(p)) {
+      selected.add(p);
+    } else {
+      otherParts.push(p);
+    }
+  }
+  other = otherParts.join('、');
+  return { selected, other };
+}
+
+function buildBenefits(selected: Set<string>, other: string): string | null {
+  const parts: string[] = [];
+  selected.forEach((t) => parts.push(t));
+  const trimmedOther = other.trim();
+  if (trimmedOther) parts.push(trimmedOther);
+  return parts.length ? parts.join('、') : null;
+}
+
 export default function OpportunityForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -41,6 +150,15 @@ export default function OpportunityForm() {
   const [firstInterviewFormat, setFirstInterviewFormat] = useState<RoundFormat>('online_video');
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
+  // Structured-field state (replaces free-text inputs for salary/work_hours/benefits)
+  const [salaryPreset, setSalaryPreset] = useState('');
+  const [salaryCustom, setSalaryCustom] = useState('');
+  const [salaryMonths, setSalaryMonths] = useState('');
+  const [workHoursPreset, setWorkHoursPreset] = useState('');
+  const [workHoursCustom, setWorkHoursCustom] = useState('');
+  const [selectedBenefits, setSelectedBenefits] = useState<Set<string>>(new Set());
+  const [benefitsOther, setBenefitsOther] = useState('');
+
   useEffect(() => {
     if (!isEdit) return;
     (async () => {
@@ -51,6 +169,16 @@ export default function OpportunityForm() {
           has_weekends_off: Boolean(opp.has_weekends_off),
         });
         setLocation(opp.city ?? '');
+        const s = parseSalary(opp.salary_range);
+        setSalaryPreset(s.preset);
+        setSalaryCustom(s.custom);
+        setSalaryMonths(s.months);
+        const w = parseWorkHours(opp.work_hours);
+        setWorkHoursPreset(w.preset);
+        setWorkHoursCustom(w.custom);
+        const b = parseBenefits(opp.benefits);
+        setSelectedBenefits(b.selected);
+        setBenefitsOther(b.other);
         setLoading(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : '加载失败');
@@ -77,9 +205,9 @@ export default function OpportunityForm() {
         has_weekends_off: form.has_weekends_off ? 1 : 0,
         city: trimmedLocation || null,
         address: null,
-        salary_range: form.salary_range || null,
-        benefits: form.benefits || null,
-        work_hours: form.work_hours || null,
+        salary_range: buildSalary(salaryPreset, salaryCustom, salaryMonths),
+        benefits: buildBenefits(selectedBenefits, benefitsOther),
+        work_hours: buildWorkHours(workHoursPreset, workHoursCustom),
         jd_text: form.jd_text || null,
         jd_url: form.jd_url || null,
         source: form.source || null,
@@ -223,13 +351,39 @@ export default function OpportunityForm() {
           </Field>
         </div>
 
-        <Field label="薪资范围（如 10K-12K*13）">
-          <input
-            value={form.salary_range ?? ''}
-            onChange={(e) => update('salary_range', e.target.value)}
-            className="w-full border border-slate-300 rounded px-3 py-1.5"
-            placeholder="例：10K-12K*13"
-          />
+        <Field label="薪资范围">
+          <div className="flex gap-2">
+            <select
+              value={salaryPreset}
+              onChange={(e) => setSalaryPreset(e.target.value)}
+              className="flex-1 border border-slate-300 rounded px-3 py-1.5"
+            >
+              {SALARY_RANGES.map((r) => (
+                <option key={r.value || 'empty'} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={salaryMonths}
+              onChange={(e) => setSalaryMonths(e.target.value)}
+              className="w-28 border border-slate-300 rounded px-3 py-1.5"
+            >
+              {SALARY_MONTHS.map((m) => (
+                <option key={m.value || 'empty'} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {salaryPreset === '__custom__' && (
+            <input
+              value={salaryCustom}
+              onChange={(e) => setSalaryCustom(e.target.value)}
+              className="w-full mt-2 border border-slate-300 rounded px-3 py-1.5"
+              placeholder="例：30-50K / 18-25K / 面议"
+            />
+          )}
         </Field>
       </div>
 
@@ -245,22 +399,62 @@ export default function OpportunityForm() {
         {advancedOpen && (
           <div className="px-4 py-3 border-t border-slate-200 space-y-3">
             <Field label="福利待遇">
+              <div className="flex flex-wrap gap-2">
+                {BENEFIT_TAGS.map((tag) => (
+                  <label
+                    key={tag}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 border rounded cursor-pointer text-sm transition ${
+                      selectedBenefits.has(tag)
+                        ? 'border-brand-500 bg-brand-50 text-brand-700'
+                        : 'border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={selectedBenefits.has(tag)}
+                      onChange={(e) => {
+                        setSelectedBenefits((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) next.add(tag);
+                          else next.delete(tag);
+                          return next;
+                        });
+                      }}
+                    />
+                    {tag}
+                  </label>
+                ))}
+              </div>
               <textarea
-                value={form.benefits ?? ''}
-                onChange={(e) => update('benefits', e.target.value)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+                value={benefitsOther}
+                onChange={(e) => setBenefitsOther(e.target.value)}
+                className="w-full mt-2 border border-slate-300 rounded px-3 py-1.5"
                 rows={2}
-                placeholder="例：六险一金、年度体检、餐补"
+                placeholder="其他福利（用顿号或逗号分隔）"
               />
             </Field>
             <div className="grid grid-cols-3 gap-4">
               <Field label="上下班时间">
-                <input
-                  value={form.work_hours ?? ''}
-                  onChange={(e) => update('work_hours', e.target.value)}
+                <select
+                  value={workHoursPreset}
+                  onChange={(e) => setWorkHoursPreset(e.target.value)}
                   className="w-full border border-slate-300 rounded px-3 py-1.5"
-                  placeholder="9:00-18:00"
-                />
+                >
+                  {WORK_HOURS_PRESETS.map((p) => (
+                    <option key={p.value || 'empty'} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+                {workHoursPreset === '__custom__' && (
+                  <input
+                    value={workHoursCustom}
+                    onChange={(e) => setWorkHoursCustom(e.target.value)}
+                    className="w-full mt-2 border border-slate-300 rounded px-3 py-1.5"
+                    placeholder="自定义时间"
+                  />
+                )}
               </Field>
               <Field label="">
                 <label className="flex items-center gap-2 pt-6">
