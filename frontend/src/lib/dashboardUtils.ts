@@ -203,14 +203,14 @@ export interface HeatmapCell {
 }
 
 const HEAT_BG = [
-  'bg-slate-800',
-  'bg-emerald-900',
-  'bg-emerald-700',
-  'bg-emerald-500',
+  'bg-neutral-100',
+  'bg-emerald-200',
   'bg-emerald-400',
+  'bg-emerald-600',
+  'bg-emerald-800',
 ];
 
-const HEAT_TEXT = ['text-slate-500', 'text-emerald-300', 'text-emerald-200', 'text-emerald-50', 'text-emerald-50'];
+const HEAT_TEXT = ['text-neutral-500', 'text-emerald-900', 'text-emerald-50', 'text-white', 'text-white'];
 
 export function HEAT_CELL_BG(intensity: number): string {
   return HEAT_BG[Math.min(intensity, 4)];
@@ -265,7 +265,7 @@ export function buildHeatmap(
       if (count > 0) totalCount += count;
       // Skip future cells (after today)
       if (differenceInCalendarDays(date, today) > 0) {
-        cells.push({ date, count, col: c, row: r, intensity: 0, bgClass: 'bg-slate-800/40' });
+        cells.push({ date, count, col: c, row: r, intensity: 0, bgClass: 'bg-neutral-50' });
         continue;
       }
       const intensity =
