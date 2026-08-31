@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Opportunity, OpportunityStatus, RoundFormat } from '../types';
+import DateTimeInput from '../components/DateTimeInput';
 
 type FormState = Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'has_weekends_off'> & {
   has_weekends_off: boolean;
@@ -294,12 +295,7 @@ export default function OpportunityForm() {
         {!isEdit && (
           <div className="grid grid-cols-2 gap-4">
             <Field label="第一次面试时间">
-              <input
-                type="datetime-local"
-                value={firstInterviewAt}
-                onChange={(e) => setFirstInterviewAt(e.target.value)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
-              />
+              <DateTimeInput value={firstInterviewAt} onChange={setFirstInterviewAt} />
             </Field>
             <Field label="形式">
               <select

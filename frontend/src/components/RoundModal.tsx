@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { InterviewRound, RoundType, RoundFormat, RoundOutcome } from '../types';
 import { ROUND_TYPE_META, FORMAT_META, OUTCOME_META } from '../lib/status';
 import { api } from '../api/client';
+import DateTimeInput from './DateTimeInput';
 
 type FormState = {
   round_number: number;
@@ -178,11 +179,10 @@ export default function RoundModal({
               </select>
             </Field>
             <Field label="计划时间" required>
-              <input
-                type="datetime-local"
-                value={form.scheduled_at.slice(0, 16)}
-                onChange={(e) => update('scheduled_at', e.target.value)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+              <DateTimeInput
+                value={form.scheduled_at}
+                onChange={(v) => update('scheduled_at', v)}
+                required
               />
             </Field>
             <Field label="地点">
@@ -207,11 +207,9 @@ export default function RoundModal({
             <div className="text-sm text-slate-500 mb-2">面试后填写（可后补）</div>
             <div className="grid grid-cols-2 gap-4">
               <Field label="实际时间">
-                <input
-                  type="datetime-local"
-                  value={form.actual_at.slice(0, 16)}
-                  onChange={(e) => update('actual_at', e.target.value)}
-                  className="w-full border border-slate-300 rounded px-3 py-1.5"
+                <DateTimeInput
+                  value={form.actual_at}
+                  onChange={(v) => update('actual_at', v)}
                 />
               </Field>
               <Field label="结果">
@@ -228,11 +226,9 @@ export default function RoundModal({
                 </select>
               </Field>
               <Field label="下轮时间">
-                <input
-                  type="datetime-local"
-                  value={form.next_round_date.slice(0, 16)}
-                  onChange={(e) => update('next_round_date', e.target.value)}
-                  className="w-full border border-slate-300 rounded px-3 py-1.5"
+                <DateTimeInput
+                  value={form.next_round_date}
+                  onChange={(v) => update('next_round_date', v)}
                 />
               </Field>
             </div>
