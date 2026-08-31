@@ -5,6 +5,7 @@ import OpportunityList from './pages/OpportunityList';
 import OpportunityForm from './pages/OpportunityForm';
 import OpportunityDetail from './pages/OpportunityDetail';
 import OpportunityImport from './pages/OpportunityImport';
+import Calendar from './pages/Calendar';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="opportunities/new" element={<OpportunityForm />} />
           <Route path="opportunities/:id" element={<OpportunityDetail />} />
           <Route path="opportunities/:id/edit" element={<OpportunityForm />} />
+          <Route path="calendar" element={<Calendar />} />
         </Route>
       </Routes>
     </BrowserRouter>
