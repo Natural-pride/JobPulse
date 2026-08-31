@@ -32,7 +32,7 @@ export default function RecentActivity({ events }: { events: ActivityEvent[] }) 
               />
               <Link
                 to={`/opportunities/${e.opportunityId}`}
-                className="block group"
+                className="block group pl-2"
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="text-sm font-medium text-neutral-900 truncate group-hover:text-indigo-700">
