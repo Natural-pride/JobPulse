@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Opportunity, OpportunityStatus, RoundFormat, WeekendPolicy } from '../types';
 import DateTimeInput from '../components/DateTimeInput';
+import CityPicker, { type CityValue } from '../components/CityPicker';
+import { getCities } from '../lib/cityData';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
 type FormState = Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'weekend_policy'> & {
@@ -95,6 +97,23 @@ function buildBenefits(selected: Set<string>, other: string): string | null {
   return parts.length ? parts.join('、') : null;
 }
 
+/**
+ * Best-effort parse of a stored city string into `(city, district)` so we can
+ * pre-fill the CityPicker on edit. Returns empty values if the string doesn't
+ * match the data — the user can re-pick.
+ */
+function parseStoredCity(stored: string): CityValue {
+  if (!stored) return { city: '', district: '' };
+  const cities = getCities();
+  for (const c of cities) {
+    if (stored === c.name) return { city: c.name, district: '' };
+    for (const d of c.districts) {
+      if (stored === `${c.name}${d}`) return { city: c.name, district: d };
+    }
+  }
+  return { city: '', district: '' };
+}
+
 export default function OpportunityForm() {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -106,7 +125,8 @@ export default function OpportunityForm() {
   useDocumentTitle(isEdit ? (form.company_name ? `编辑 · ${form.company_name}` : '编辑面试') : '新建面试');
 
   // Quick-add fields (only used when creating)
-  const [location, setLocation] = useState('');
+  const [cityValue, setCityValue] = useState<CityValue>({ city: '', district: '' });
+  const [addressDetail, setAddressDetail] = useState('');
   const [firstInterviewAt, setFirstInterviewAt] = useState('');
   const [firstInterviewFormat, setFirstInterviewFormat] = useState<RoundFormat>('online_video');
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -126,7 +146,12 @@ export default function OpportunityForm() {
           ...opp,
           weekend_policy: opp.weekend_policy ?? '',
         });
-        setLocation(opp.city ?? '');
+        // Try to split the stored city string into city + district. The legacy
+        // single-string format may not match, in which case we leave the picker
+        // empty and the user re-picks.
+        const parsed = parseStoredCity(opp.city ?? '');
+        setCityValue(parsed);
+        setAddressDetail(opp.address ?? '');
         const w = parseWorkHours(opp.work_hours);
         setWorkHoursPreset(w.preset);
         setWorkHoursCustom(w.custom);
@@ -153,12 +178,15 @@ export default function OpportunityForm() {
     setError(null);
     setSaving(true);
     try {
-      const trimmedLocation = location.trim();
+      const trimmedDetail = addressDetail.trim();
+      const fullCity = cityValue.district
+        ? `${cityValue.city}${cityValue.district}`
+        : cityValue.city;
       const payload = {
         ...form,
         weekend_policy: form.weekend_policy || null,
-        city: trimmedLocation || null,
-        address: null,
+        city: fullCity || null,
+        address: trimmedDetail || null,
         salary_range: form.salary_range?.trim() || null,
         benefits: buildBenefits(selectedBenefits, benefitsOther),
         work_hours: buildWorkHours(workHoursPreset, workHoursCustom),
@@ -184,7 +212,7 @@ export default function OpportunityForm() {
               round_type: 'tech_1',
               format: firstInterviewFormat,
               scheduled_at: firstInterviewAt.length === 16 ? firstInterviewAt + ':00' : firstInterviewAt,
-              location: trimmedLocation || null,
+              location: fullCity || null,
               outcome: 'pending',
             });
           } catch (roundErr) {
@@ -251,12 +279,16 @@ export default function OpportunityForm() {
           </div>
         )}
 
-        <Field label="地点">
+        <Field label="城市">
+          <CityPicker value={cityValue} onChange={setCityValue} />
+        </Field>
+
+        <Field label="详细地址">
           <input
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            value={addressDetail}
+            onChange={(e) => setAddressDetail(e.target.value)}
             className="w-full border border-slate-300 rounded px-3 py-1.5"
-            placeholder="例：广州海珠智通广场"
+            placeholder="例：枫信科创中心 4 楼 466 室"
           />
         </Field>
 

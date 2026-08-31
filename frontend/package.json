@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@types/react-datepicker": "^6.2.0",
+    "china-area-data": "^5.0.1",
     "date-fns": "^3.6.0",
     "react": "^18.3.0",
     "react-datepicker": "^9.1.0",

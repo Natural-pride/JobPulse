@@ -133,7 +133,13 @@ export default function OpportunityDetail() {
           <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 truncate">
             {opp.company_name} · {opp.position_name}
           </h1>
-          {opp.city && <div className="text-sm text-neutral-500 mt-1.5">{opp.city}</div>}
+          {(opp.city || opp.address) && (
+            <div className="text-sm text-neutral-500 mt-1.5">
+              {opp.city}
+              {opp.city && opp.address ? ' · ' : ''}
+              {opp.address}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs font-medium text-neutral-500 tracking-wide uppercase">状态</span>
