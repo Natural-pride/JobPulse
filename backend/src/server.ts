@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createApp } from './app.js';
 import { getDb } from './db.js';
 
@@ -8,7 +9,7 @@ const app = createApp(db);
 
 if (!process.env.ZHIPU_API_KEY) {
   console.warn(
-    '[JobPulse] ZHIPU_API_KEY is not set. The screenshot import endpoint (POST /api/parse-screenshot) will return 503 until you provide one.'
+    '[JobPulse] ZHIPU_API_KEY is not set. The screenshot import endpoint (POST /api/parse-screenshot) will return 503 until you provide one. (Set it in backend/.env, see .env.example.)'
   );
 }
 
