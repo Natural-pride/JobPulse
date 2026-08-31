@@ -130,8 +130,18 @@ export default function OpportunityTimeline({
               >
                 {e.title}
               </div>
-              <div className="text-[11px] text-neutral-500 tabular-nums shrink-0">
-                {leftLabel}
+              <div className="flex items-baseline gap-1.5 shrink-0">
+                <span className="text-[11px] text-neutral-500 tabular-nums">
+                  {leftLabel}
+                </span>
+                {e.backfillHint && (
+                  <span
+                    className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-px leading-tight whitespace-nowrap"
+                    title="这条事件是后来补录的，日期是历史日期"
+                  >
+                    {e.backfillHint}
+                  </span>
+                )}
               </div>
             </div>
             {e.subtitle && (

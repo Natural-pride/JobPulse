@@ -1,4 +1,4 @@
-import { format, parseISO, isValid } from 'date-fns';
+import { differenceInDays, format, parseISO, isValid } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import type { InterviewRound, Opportunity } from '../types';
 import { ROUND_TYPE_META, FORMAT_META, OUTCOME_META } from './status';
@@ -15,7 +15,7 @@ export type TimelineEventType =
 
 export interface TimelineEvent {
   id: string;
-  /** ISO date string for sorting. */
+  /** Date used for sorting in display (event's natural date). */
   date: string;
   /** Display date label, e.g. "今天 15:00" or "2026-08-30 11:00". */
   dateLabel: string;
@@ -27,6 +27,11 @@ export interface TimelineEvent {
   ringClass: string;
   /** Round ID, when the event references a specific round. */
   roundId?: number;
+  /**
+   * If this event's "real" date predates its record creation by more than a day,
+   * show a small "(补录于 MM-DD)" hint so the user knows the date is historical.
+   */
+  backfillHint?: string;
 }
 
 const TYPE_META: Record<
@@ -113,9 +118,10 @@ export function buildTimeline(
     ringClass: TYPE_META.created.ring,
   });
 
-  // 2. For each round, emit events
+  // 2. For each round, emit events in round_number order
+  //    (fall back to scheduled_at as tiebreak).
   const sortedRounds = [...rounds].sort((a, b) => {
-    // Order by scheduled_at first, then actual_at
+    if (a.round_number !== b.round_number) return a.round_number - b.round_number;
     const ak = a.actual_at || a.scheduled_at;
     const bk = b.actual_at || b.scheduled_at;
     return ak.localeCompare(bk);
@@ -142,6 +148,7 @@ export function buildTimeline(
         dotClass: TYPE_META[eventType].dot,
         ringClass: TYPE_META[eventType].ring,
         roundId: round.id,
+        backfillHint: makeBackfillHint(dateIso, opp.created_at),
       });
     } else {
       // Pending outcome: show "scheduled" event on scheduled_at.
@@ -155,6 +162,7 @@ export function buildTimeline(
         dotClass: TYPE_META.round_scheduled.dot,
         ringClass: TYPE_META.round_scheduled.ring,
         roundId: round.id,
+        backfillHint: makeBackfillHint(round.scheduled_at, opp.created_at),
       });
     }
   }
@@ -186,9 +194,46 @@ export function buildTimeline(
     });
   }
 
-  // Sort by date asc (timeline reads top → bottom, oldest first)
-  events.sort((a, b) => a.date.localeCompare(b.date));
+  // Logical-order sort: created → rounds → offered → accepted.
+  // Within rounds, the input order is already round_number-asc, so we just
+  // apply the priority sort and a date tiebreak for safety.
+  events.sort((a, b) => {
+    const pa = LOGICAL_ORDER[a.type];
+    const pb = LOGICAL_ORDER[b.type];
+    if (pa !== pb) return pa - pb;
+    return a.date.localeCompare(b.date);
+  });
   return events;
+}
+
+/**
+ * Logical-position priority for the timeline. Smaller = earlier.
+ * - created: always first (the "anchor" of the story)
+ * - round_*: middle band, ordered by round_number upstream
+ * - status_offered / status_accepted: always after rounds
+ */
+const LOGICAL_ORDER: Record<TimelineEventType, number> = {
+  created: 0,
+  round_scheduled: 1,
+  round_pending: 1,
+  round_passed: 1,
+  round_failed: 1,
+  round_cancelled: 1,
+  status_offered: 2,
+  status_accepted: 3,
+};
+
+/**
+ * If a round's "real" date predates the opportunity's creation by 1+ days,
+ * it's a backfill — return a short label so the user knows the date is
+ * historical (the row was added later). Returns undefined otherwise.
+ */
+function makeBackfillHint(eventIso: string, createdIso: string): string | undefined {
+  const ev = parseISO(eventIso);
+  const created = parseISO(createdIso);
+  if (!isValid(ev) || !isValid(created)) return undefined;
+  if (differenceInDays(created, ev) < 1) return undefined;
+  return `补录于 ${format(created, 'MM-dd')}`;
 }
 
 /** Compact date label for the left rail of the timeline. */
