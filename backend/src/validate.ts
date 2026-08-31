@@ -20,6 +20,7 @@ export const opportunityCreateSchema = z.object({
   status: z
     .enum([
       'in_progress',
+      'awaiting_response',
       'offered',
       'accepted',
       'rejected',
@@ -31,6 +32,7 @@ export const opportunityCreateSchema = z.object({
   final_salary: z.string().nullable().optional(),
   final_benefits: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  resume_submitted_at: z.string().nullable().optional(),
 });
 
 export const opportunityUpdateSchema = opportunityCreateSchema.partial();

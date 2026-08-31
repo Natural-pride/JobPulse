@@ -373,6 +373,79 @@ function QuickActionBar({
 }) {
   const actions: QuickAction[] = [];
 
+  // From in_progress: HR said "等回音", 标为等待回复
+  if (opp.status === 'in_progress') {
+    actions.push({
+      key: 'await',
+      label: '标记为等待回复',
+      description: 'HR 说等回音，简历已投但还没排面',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      ),
+      bg: 'bg-amber-50',
+      text: 'text-amber-700',
+      border: 'border-amber-200',
+      patch: {
+        status: 'awaiting_response',
+        // Backdate to now so Action Items use the latest known "submitted" time.
+        resume_submitted_at: opp.resume_submitted_at ?? new Date().toISOString().slice(0, 10),
+      },
+    });
+  }
+
+  // From awaiting_response: HR 真的约面了 / 默拒了 / 不想等了
+  if (opp.status === 'awaiting_response') {
+    actions.push({
+      key: 'to_in_progress',
+      label: '已安排面试',
+      description: 'HR 排了面试，回到进行中',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ),
+      bg: 'bg-blue-50',
+      text: 'text-blue-700',
+      border: 'border-blue-200',
+      patch: { status: 'in_progress' },
+    });
+    actions.push({
+      key: 'ghosted',
+      label: '标为未通过',
+      description: '超过 5 天没回音，大概率被默拒',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+          <line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+      ),
+      bg: 'bg-rose-50',
+      text: 'text-rose-700',
+      border: 'border-rose-200',
+      patch: { status: 'rejected' },
+    });
+    actions.push({
+      key: 'abandon',
+      label: '撤回',
+      description: '不想等了，从列表移除',
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+      ),
+      bg: 'bg-slate-50',
+      text: 'text-slate-700',
+      border: 'border-slate-200',
+      patch: { status: 'withdrawn' },
+    });
+  }
+
   if (opp.status === 'offered') {
     actions.push({
       key: 'accept',

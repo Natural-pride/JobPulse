@@ -86,6 +86,42 @@ describe('Opportunities API', () => {
     expect(get.status).toBe(404);
   });
 
+  it('awaiting_response status and resume_submitted_at roundtrip', async () => {
+    const create = await request(app)
+      .post('/api/opportunities')
+      .send({
+        company_name: '投递公司',
+        position_name: '后端',
+        status: 'awaiting_response',
+        resume_submitted_at: '2026-08-28 10:00:00',
+      });
+    expect(create.status).toBe(201);
+    expect(create.body.status).toBe('awaiting_response');
+    expect(create.body.resume_submitted_at).toBe('2026-08-28 10:00:00');
+
+    const get = await request(app).get(`/api/opportunities/${create.body.id}`);
+    expect(get.body.status).toBe('awaiting_response');
+    expect(get.body.resume_submitted_at).toBe('2026-08-28 10:00:00');
+
+    // Update to in_progress + new resume date
+    const update = await request(app)
+      .put(`/api/opportunities/${create.body.id}`)
+      .send({ status: 'in_progress', resume_submitted_at: null });
+    expect(update.body.status).toBe('in_progress');
+    expect(update.body.resume_submitted_at).toBeNull();
+  });
+
+  it('rejects invalid awaiting_response-like status', async () => {
+    const res = await request(app)
+      .post('/api/opportunities')
+      .send({
+        company_name: 'X',
+        position_name: 'Y',
+        status: 'waiting',
+      });
+    expect(res.status).toBe(400);
+  });
+
   it('weekend_policy roundtrips on create/get/update', async () => {
     const create = await request(app)
       .post('/api/opportunities')

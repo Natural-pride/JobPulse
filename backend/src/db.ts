@@ -37,6 +37,7 @@ export function initDb(dbPath: string): Database.Database {
       final_salary TEXT,
       final_benefits TEXT,
       notes TEXT,
+      resume_submitted_at TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -75,7 +76,13 @@ export function initDb(dbPath: string): Database.Database {
     instance.exec(`ALTER TABLE opportunities ADD COLUMN province TEXT`);
   }
 
-  // 2. has_weekends_off (INTEGER 0/1) → weekend_policy (TEXT enum).
+  // 2. Add `resume_submitted_at` column. New status `awaiting_response` uses
+  //    this timestamp to compute idle days for Action Items. Old rows stay NULL.
+  if (!cols.some((c) => c.name === 'resume_submitted_at')) {
+    instance.exec(`ALTER TABLE opportunities ADD COLUMN resume_submitted_at TEXT`);
+  }
+
+  // 3. has_weekends_off (INTEGER 0/1) → weekend_policy (TEXT enum).
   //    0 → NULL, 1 → 'double_off'. Drop the legacy column on SQLite 3.35+.
   const hasOld = cols.some((c) => c.name === 'has_weekends_off');
   const hasNew = cols.some((c) => c.name === 'weekend_policy');

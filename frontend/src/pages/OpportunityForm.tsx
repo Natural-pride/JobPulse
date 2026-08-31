@@ -32,6 +32,7 @@ const empty: FormState = {
   final_salary: '',
   final_benefits: '',
   notes: '',
+  resume_submitted_at: new Date().toISOString().slice(0, 10),
 };
 
 const WORK_HOURS_PRESETS = [
@@ -179,6 +180,8 @@ export default function OpportunityForm() {
         setForm({
           ...opp,
           weekend_policy: opp.weekend_policy ?? '',
+          // API returns ISO datetime; <input type="date"> wants YYYY-MM-DD.
+          resume_submitted_at: (opp.resume_submitted_at ?? '').slice(0, 10),
         });
         // Try to split the stored city string into province/city/district. The
         // legacy single-string format may not match, in which case we leave the
@@ -232,6 +235,7 @@ export default function OpportunityForm() {
         final_salary: form.final_salary || null,
         final_benefits: form.final_benefits || null,
         notes: form.notes || null,
+        resume_submitted_at: form.resume_submitted_at || null,
       };
       let opportunityId: number;
       if (isEdit) {
@@ -371,6 +375,17 @@ export default function OpportunityForm() {
           description="安排第一次面试的详细信息"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <Field
+              label="简历提交日期"
+              hint={form.status === 'awaiting_response' ? '等待回复状态下，用于提醒"已等 N 天"' : '可选；选择"等待回复"状态时会用此日期算天数'}
+            >
+              <input
+                type="date"
+                value={form.resume_submitted_at ?? ''}
+                onChange={(e) => update('resume_submitted_at', e.target.value)}
+                className={INPUT_CLASS}
+              />
+            </Field>
             {!isEdit ? (
               <>
                 <Field label="第一次面试时间">
@@ -583,6 +598,7 @@ export default function OpportunityForm() {
                     className={INPUT_CLASS}
                   >
                     <option value="in_progress">进行中</option>
+                    <option value="awaiting_response">等待回复</option>
                     <option value="offered">已 Offer</option>
                     <option value="accepted">已接受</option>
                     <option value="rejected">未通过</option>
@@ -645,7 +661,7 @@ export default function OpportunityForm() {
   );
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       {label && (
@@ -655,6 +671,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
         </label>
       )}
       {children}
+      {hint && <p className="text-[11px] text-slate-400 leading-relaxed">{hint}</p>}
     </div>
   );
 }

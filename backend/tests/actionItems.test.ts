@@ -36,6 +36,7 @@ function makeOpp(overrides: Partial<Opportunity> = {}): Opportunity {
     final_salary: null,
     final_benefits: null,
     notes: null,
+    resume_submitted_at: null,
     created_at: isoDaysAgo(30),
     updated_at: isoDaysAgo(3),
     ...overrides,
@@ -164,5 +165,53 @@ describe('computeActionItems', () => {
     // No yellow or blue should appear.
     expect(items.every((i) => i.severity === 'red')).toBe(true);
     expect(idx_red).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('computeActionItems — awaiting_response', () => {
+  it('does not flag awaiting_response < 3 days', () => {
+    const opp = makeOpp({
+      id: 1,
+      status: 'awaiting_response',
+      resume_submitted_at: isoDaysAgo(2),
+    });
+    const items = computeActionItems([opp], new Map(), NOW);
+    expect(items.find((i) => i.type === 'follow_up')).toBeUndefined();
+  });
+
+  it('flags awaiting_response >= 3 days as yellow', () => {
+    const opp = makeOpp({
+      id: 1,
+      status: 'awaiting_response',
+      resume_submitted_at: isoDaysAgo(3),
+    });
+    const items = computeActionItems([opp], new Map(), NOW);
+    const f = items.find((i) => i.type === 'follow_up');
+    expect(f?.severity).toBe('yellow');
+    expect(f?.message).toContain('3 天');
+  });
+
+  it('flags awaiting_response >= 5 days as red with rejection hint', () => {
+    const opp = makeOpp({
+      id: 1,
+      status: 'awaiting_response',
+      resume_submitted_at: isoDaysAgo(7),
+    });
+    const items = computeActionItems([opp], new Map(), NOW);
+    const f = items.find((i) => i.type === 'follow_up');
+    expect(f?.severity).toBe('red');
+    expect(f?.hint).toContain('未通过');
+  });
+
+  it('falls back to created_at when resume_submitted_at is missing', () => {
+    const opp = makeOpp({
+      id: 1,
+      status: 'awaiting_response',
+      resume_submitted_at: null,
+      created_at: isoDaysAgo(6),
+    });
+    const items = computeActionItems([opp], new Map(), NOW);
+    const f = items.find((i) => i.type === 'follow_up');
+    expect(f?.severity).toBe('red');
   });
 });

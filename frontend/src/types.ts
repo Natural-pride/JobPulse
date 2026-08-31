@@ -1,5 +1,6 @@
 export type OpportunityStatus =
   | 'in_progress'
+  | 'awaiting_response'
   | 'offered'
   | 'accepted'
   | 'rejected'
@@ -47,6 +48,9 @@ export interface Opportunity {
   final_salary: string | null;
   final_benefits: string | null;
   notes: string | null;
+  /** Date the resume was submitted (ISO 8601). Used to drive the
+   *  `awaiting_response` Action Items rules. NULL when unknown. */
+  resume_submitted_at: string | null;
   created_at: string;
   updated_at: string;
 }

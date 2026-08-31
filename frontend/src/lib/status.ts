@@ -5,6 +5,7 @@ export const STATUS_META: Record<
   { label: string; color: string; bgColor: string }
 > = {
   in_progress: { label: '进行中', color: 'text-blue-700', bgColor: 'bg-blue-100' },
+  awaiting_response: { label: '等待回复', color: 'text-amber-700', bgColor: 'bg-amber-100' },
   offered: { label: '已 Offer', color: 'text-green-700', bgColor: 'bg-green-100' },
   accepted: { label: '已接受', color: 'text-emerald-700', bgColor: 'bg-emerald-100' },
   rejected: { label: '未通过', color: 'text-red-700', bgColor: 'bg-red-100' },

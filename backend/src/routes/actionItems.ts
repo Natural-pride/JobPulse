@@ -26,6 +26,9 @@ export interface ActionItem {
 const STALE_DAYS_YELLOW = 7;
 const STALE_DAYS_RED = 14;
 const PENDING_OVERDUE_DAYS = 1;
+/** `awaiting_response` (resume submitted, waiting for HR to schedule). */
+const AWAITING_DAYS_YELLOW = 3;
+const AWAITING_DAYS_RED = 5;
 
 function parseDate(s: string | null | undefined): number | null {
   if (!s) return null;
@@ -117,6 +120,40 @@ export function computeActionItems(
           hint: '可考虑跟进',
           days_idle: daysIdle,
         });
+      }
+    }
+
+    // Rule: awaiting_response — resume submitted, no interview scheduled yet.
+    //       If `resume_submitted_at` is known, use it; otherwise fall back to
+    //       the opportunity's created_at. 3d → yellow "follow up", 5d → red
+    //       "almost certainly ghosted, suggest marking as rejected".
+    if (opp.status === 'awaiting_response') {
+      const submittedTs = parseDate(opp.resume_submitted_at) ?? parseDate(opp.created_at);
+      if (submittedTs !== null) {
+        const daysWaiting = Math.floor((now - submittedTs) / (1000 * 60 * 60 * 24));
+        if (daysWaiting >= AWAITING_DAYS_RED) {
+          items.push({
+            type: 'follow_up',
+            severity: 'red',
+            opportunity_id: opp.id,
+            company: opp.company_name,
+            position: opp.position_name,
+            message: `简历已投 ${daysWaiting} 天无回应`,
+            hint: '大概率已被默拒，建议标为「未通过」',
+            days_idle: daysWaiting,
+          });
+        } else if (daysWaiting >= AWAITING_DAYS_YELLOW) {
+          items.push({
+            type: 'follow_up',
+            severity: 'yellow',
+            opportunity_id: opp.id,
+            company: opp.company_name,
+            position: opp.position_name,
+            message: `简历已投 ${daysWaiting} 天无回应`,
+            hint: '可主动跟进一下 HR',
+            days_idle: daysWaiting,
+          });
+        }
       }
     }
 

@@ -21,6 +21,7 @@ const listQuerySchema = z.object({
   status: z
     .enum([
       'in_progress',
+      'awaiting_response',
       'offered',
       'accepted',
       'rejected',
@@ -131,11 +132,11 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
       INSERT INTO opportunities (
         company_name, position_name, province, city, address, salary_range, benefits,
         weekend_policy, work_hours, jd_text, jd_url, source, contact_info,
-        status, final_salary, final_benefits, notes
+        status, final_salary, final_benefits, notes, resume_submitted_at
       ) VALUES (
         @company_name, @position_name, @province, @city, @address, @salary_range, @benefits,
         @weekend_policy, @work_hours, @jd_text, @jd_url, @source, @contact_info,
-        @status, @final_salary, @final_benefits, @notes
+        @status, @final_salary, @final_benefits, @notes, @resume_submitted_at
       )
     `);
     const result = stmt.run({
@@ -156,6 +157,7 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
       final_salary: data.final_salary ?? null,
       final_benefits: data.final_benefits ?? null,
       notes: data.notes ?? null,
+      resume_submitted_at: data.resume_submitted_at ?? null,
     });
     const created = db
       .prepare('SELECT * FROM opportunities WHERE id = ?')
@@ -205,6 +207,10 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
           ? data.final_benefits
           : existing.final_benefits,
       notes: data.notes !== undefined ? data.notes : existing.notes,
+      resume_submitted_at:
+        data.resume_submitted_at !== undefined
+          ? data.resume_submitted_at
+          : existing.resume_submitted_at,
     };
     db.prepare(
       `UPDATE opportunities SET
@@ -214,7 +220,7 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
         work_hours=@work_hours, jd_text=@jd_text, jd_url=@jd_url,
         source=@source, contact_info=@contact_info, status=@status,
         final_salary=@final_salary, final_benefits=@final_benefits,
-        notes=@notes, updated_at=datetime('now')
+        notes=@notes, resume_submitted_at=@resume_submitted_at, updated_at=datetime('now')
       WHERE id=@id`
     ).run({ ...merged, id });
     const updated = db
