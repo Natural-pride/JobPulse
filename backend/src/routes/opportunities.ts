@@ -31,6 +31,12 @@ const listQuerySchema = z.object({
     ])
     .optional(),
   search: z.string().trim().min(1).max(100).optional(),
+  /** Exact source value match (e.g. "BOSS", "内推", "朋友内推"). */
+  source: z.string().trim().min(1).max(100).optional(),
+  /** Funnel: at least one round recorded (any outcome). */
+  has_rounds: z.coerce.boolean().optional(),
+  /** Funnel: at least one round with outcome='passed'. */
+  has_passed_round: z.coerce.boolean().optional(),
 });
 
 /**
@@ -74,7 +80,8 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    const { page, pageSize, status, search } = parsed.data;
+    const { page, pageSize, status, search, source, has_rounds, has_passed_round } =
+      parsed.data;
     const offset = (page - 1) * pageSize;
 
     const where: string[] = [];
@@ -87,6 +94,20 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
       where.push('(company_name LIKE ? OR position_name LIKE ?)');
       const like = `%${search}%`;
       params.push(like, like);
+    }
+    if (source) {
+      where.push('TRIM(source) = ?');
+      params.push(source);
+    }
+    if (has_rounds) {
+      where.push(
+        'EXISTS (SELECT 1 FROM interview_rounds r WHERE r.opportunity_id = opportunities.id)'
+      );
+    }
+    if (has_passed_round) {
+      where.push(
+        `EXISTS (SELECT 1 FROM interview_rounds r WHERE r.opportunity_id = opportunities.id AND r.outcome = 'passed')`
+      );
     }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 

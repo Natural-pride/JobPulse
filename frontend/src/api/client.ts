@@ -51,12 +51,18 @@ export const api = {
       pageSize?: number;
       status?: OpportunityStatus;
       search?: string;
+      source?: string;
+      has_rounds?: boolean;
+      has_passed_round?: boolean;
     } = {}) => {
       const qs = new URLSearchParams();
       if (params.page !== undefined) qs.set('page', String(params.page));
       if (params.pageSize !== undefined) qs.set('pageSize', String(params.pageSize));
       if (params.status) qs.set('status', params.status);
       if (params.search) qs.set('search', params.search);
+      if (params.source) qs.set('source', params.source);
+      if (params.has_rounds) qs.set('has_rounds', 'true');
+      if (params.has_passed_round) qs.set('has_passed_round', 'true');
       const suffix = qs.toString() ? `?${qs.toString()}` : '';
       return request<PagedOpportunities>(`/opportunities${suffix}`);
     },

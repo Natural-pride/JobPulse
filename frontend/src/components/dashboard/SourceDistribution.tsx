@@ -1,4 +1,10 @@
+import { Link } from 'react-router-dom';
 import type { SourceBucket } from '../../lib/dashboardUtils';
+
+function buildHref(source: string): string {
+  // URL-encode the source for safe query-param transport.
+  return `/opportunities?source=${encodeURIComponent(source)}`;
+}
 
 export default function SourceDistribution({ buckets }: { buckets: SourceBucket[] }) {
   const total = buckets.reduce((sum, b) => sum + b.count, 0);
@@ -18,14 +24,16 @@ export default function SourceDistribution({ buckets }: { buckets: SourceBucket[
                 {b.source}
               </div>
               <div className="flex-1 h-6 bg-neutral-100 rounded overflow-hidden">
-                <div
-                  className={`${b.barClass} h-full rounded flex items-center justify-end px-2 transition-all`}
+                <Link
+                  to={buildHref(b.source)}
+                  className={`${b.barClass} h-full rounded flex items-center justify-end px-2 hover:brightness-110 hover:ring-2 hover:ring-white/40 transition-all cursor-pointer`}
                   style={{ width: `${Math.max(b.width, 6)}%` }}
+                  title={`点击查看「${b.source}」的具体机会`}
                 >
                   <span className="text-[11px] font-semibold text-white tabular-nums">
                     {b.count}
                   </span>
-                </div>
+                </Link>
               </div>
             </div>
           ))}

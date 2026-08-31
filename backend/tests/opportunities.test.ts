@@ -290,6 +290,72 @@ describe('Opportunities pagination', () => {
   });
 });
 
+describe('Opportunities funnel/source filters', () => {
+  let db: Database.Database;
+  let app: ReturnType<typeof createApp>;
+
+  beforeEach(() => {
+    if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
+    db = initDb(TEST_DB);
+    app = createApp(db);
+    const insOpp = db.prepare(
+      'INSERT INTO opportunities (company_name, position_name, source, status, created_at) VALUES (?, ?, ?, ?, ?)'
+    );
+    const insRound = db.prepare(
+      `INSERT INTO interview_rounds
+         (opportunity_id, round_number, round_type, format, scheduled_at, actual_at, outcome)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    );
+    // 1: BOSS source, no rounds
+    insOpp.run('A', 'A1', 'BOSS', 'in_progress', '2026-08-01 10:00:00');
+    // 2: BOSS source, has 1 pending round
+    const b = insOpp.run('B', 'B1', 'BOSS', 'in_progress', '2026-08-02 10:00:00').lastInsertRowid as number;
+    insRound.run(b, 1, 'tech_1', 'online_video', '2026-08-10 10:00:00', null, 'pending');
+    // 3: 内推 source, has 1 passed round
+    const c = insOpp.run('C', 'C1', '内推', 'in_progress', '2026-08-03 10:00:00').lastInsertRowid as number;
+    insRound.run(c, 1, 'tech_1', 'online_video', '2026-08-11 10:00:00', '2026-08-11 11:00:00', 'passed');
+    // 4: 内推 source, has 1 failed round
+    const d = insOpp.run('D', 'D1', '内推', 'rejected', '2026-08-04 10:00:00').lastInsertRowid as number;
+    insRound.run(d, 1, 'tech_1', 'online_video', '2026-08-12 10:00:00', '2026-08-12 11:00:00', 'failed');
+    // 5: offered status (no rounds recorded yet but in offer state)
+    insOpp.run('E', 'E1', 'BOSS', 'offered', '2026-08-05 10:00:00');
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it('filters by source', async () => {
+    const res = await request(app).get('/api/opportunities?source=BOSS&pageSize=10');
+    expect(res.body.total).toBe(3); // A, B, E
+    expect(
+      (res.body.items as Array<{ source: string }>).every((o) => o.source === 'BOSS')
+    ).toBe(true);
+  });
+
+  it('filters by has_rounds=true', async () => {
+    const res = await request(app).get('/api/opportunities?has_rounds=true&pageSize=10');
+    expect(res.body.total).toBe(3); // B, C, D (A and E have no rounds)
+  });
+
+  it('filters by has_passed_round=true', async () => {
+    const res = await request(app).get('/api/opportunities?has_passed_round=true&pageSize=10');
+    expect(res.body.total).toBe(1); // only C
+  });
+
+  it('combines source + has_passed_round', async () => {
+    const res = await request(app).get(
+      '/api/opportunities?source=内推&has_passed_round=true&pageSize=10'
+    );
+    expect(res.body.total).toBe(1); // only C (D has a failed round, not passed)
+  });
+
+  it('trims source parameter', async () => {
+    const res = await request(app).get('/api/opportunities?source=%20BOSS%20&pageSize=10');
+    expect(res.body.total).toBe(3);
+  });
+});
+
 describe('Opportunities sort by interview time', () => {
   let db: Database.Database;
   let app: ReturnType<typeof createApp>;
