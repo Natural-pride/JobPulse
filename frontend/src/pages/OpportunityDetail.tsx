@@ -133,11 +133,9 @@ export default function OpportunityDetail() {
           <h1 className="text-2xl font-semibold tracking-tight text-neutral-900 truncate">
             {opp.company_name} · {opp.position_name}
           </h1>
-          {(opp.city || opp.address) && (
+          {(opp.province || opp.city || opp.address) && (
             <div className="text-sm text-neutral-500 mt-1.5">
-              {opp.city}
-              {opp.city && opp.address ? ' · ' : ''}
-              {opp.address}
+              {[opp.province, opp.city, opp.address].filter(Boolean).join(' · ')}
             </div>
           )}
         </div>

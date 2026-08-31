@@ -1,6 +1,7 @@
 import areaData from 'china-area-data';
 
 export interface CityEntry {
+  province: string;
   name: string;
   districts: string[];
 }
@@ -10,17 +11,39 @@ export interface CityEntry {
 // district list.
 const MUNICIPALITY_IDS = new Set(['110000', '120000', '310000', '500000']);
 
-let cache: CityEntry[] | null = null;
+let citiesCache: CityEntry[] | null = null;
+let provincesCache: string[] | null = null;
+
+/**
+ * Returns the list of province names, sorted by zh-CN locale.
+ */
+export function getProvinces(): string[] {
+  if (provincesCache) return provincesCache;
+  const data = areaData as Record<string, Record<string, string>>;
+  const provinces = data['86'];
+  if (!provinces) return [];
+  provincesCache = Object.values(provinces).sort((a, b) =>
+    a.localeCompare(b, 'zh-CN')
+  );
+  return provincesCache;
+}
+
+/**
+ * Returns the cities that belong to the given province, sorted by zh-CN locale.
+ */
+export function getCitiesInProvince(province: string): CityEntry[] {
+  return getCities().filter((c) => c.province === province);
+}
 
 /**
  * Flattens the nested china-area-data structure into a flat list of
- * `(city, districts[])` pairs suitable for a 2-level city picker.
+ * `(province, city, districts[])` entries suitable for a 3-level picker.
  *
  * Filters out the placeholder '市辖区' entry that the dataset uses to group
  * real districts; municipalities get their province name as the city name.
  */
 export function getCities(): CityEntry[] {
-  if (cache) return cache;
+  if (citiesCache) return citiesCache;
   const data = areaData as Record<string, Record<string, string>>;
   const provinces = data['86'];
   if (!provinces) return [];
@@ -40,7 +63,7 @@ export function getCities(): CityEntry[] {
       }
       const unique = [...new Set(districts)].filter((d) => d !== '市辖区');
       if (unique.length > 0) {
-        cities.push({ name: provinceName, districts: unique });
+        cities.push({ province: provinceName, name: provinceName, districts: unique });
       }
     } else {
       // Regular province: each child is one city.
@@ -49,12 +72,21 @@ export function getCities(): CityEntry[] {
         if (!subs) continue;
         const districts = Object.values(subs).filter((d) => d !== '市辖区');
         if (districts.length === 0) continue;
-        cities.push({ name: cityName, districts });
+        cities.push({ province: provinceName, name: cityName, districts });
       }
     }
   }
 
   cities.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
-  cache = cities;
+  citiesCache = cities;
   return cities;
+}
+
+/**
+ * Look up the province that contains the given city name. Returns null if
+ * the city isn't in the dataset — useful for backward-compat parsing of
+ * existing city strings.
+ */
+export function findProvinceForCity(cityName: string): string | null {
+  return getCities().find((c) => c.name === cityName)?.province ?? null;
 }

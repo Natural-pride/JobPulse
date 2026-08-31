@@ -4,10 +4,13 @@ import { api } from '../api/client';
 import type { Opportunity, OpportunityStatus, RoundFormat, WeekendPolicy } from '../types';
 import DateTimeInput from '../components/DateTimeInput';
 import CityPicker, { type CityValue } from '../components/CityPicker';
-import { getCities } from '../lib/cityData';
+import { getCities, findProvinceForCity } from '../lib/cityData';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
-type FormState = Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'weekend_policy'> & {
+type FormState = Omit<
+  Opportunity,
+  'id' | 'created_at' | 'updated_at' | 'weekend_policy' | 'province'
+> & {
   weekend_policy: WeekendPolicy | '';
 };
 
@@ -98,20 +101,36 @@ function buildBenefits(selected: Set<string>, other: string): string | null {
 }
 
 /**
- * Best-effort parse of a stored city string into `(city, district)` so we can
- * pre-fill the CityPicker on edit. Returns empty values if the string doesn't
- * match the data — the user can re-pick.
+ * Best-effort parse of stored province + city strings into picker state.
+ * Returns empty values if the data doesn't match — the user can re-pick.
  */
-function parseStoredCity(stored: string): CityValue {
-  if (!stored) return { city: '', district: '' };
+function parseStoredLocation(
+  storedProvince: string | null,
+  storedCity: string | null
+): CityValue {
+  const empty: CityValue = { province: '', city: '', district: '' };
+  const stored = storedCity ?? '';
+  if (!stored && !storedProvince) return empty;
+
   const cities = getCities();
   for (const c of cities) {
-    if (stored === c.name) return { city: c.name, district: '' };
+    if (stored === c.name) {
+      return { province: storedProvince ?? c.province, city: c.name, district: '' };
+    }
     for (const d of c.districts) {
-      if (stored === `${c.name}${d}`) return { city: c.name, district: d };
+      if (stored === `${c.name}${d}`) {
+        return { province: storedProvince ?? c.province, city: c.name, district: d };
+      }
     }
   }
-  return { city: '', district: '' };
+  // City didn't match the dataset; keep whatever province we have, leave the rest.
+  if (storedProvince) {
+    return { province: storedProvince, city: stored, district: '' };
+  }
+  // Last resort: try to derive province from the city name alone.
+  const guessed = findProvinceForCity(stored);
+  if (guessed) return { province: guessed, city: stored, district: '' };
+  return empty;
 }
 
 export default function OpportunityForm() {
@@ -125,7 +144,11 @@ export default function OpportunityForm() {
   useDocumentTitle(isEdit ? (form.company_name ? `编辑 · ${form.company_name}` : '编辑面试') : '新建面试');
 
   // Quick-add fields (only used when creating)
-  const [cityValue, setCityValue] = useState<CityValue>({ city: '', district: '' });
+  const [cityValue, setCityValue] = useState<CityValue>({
+    province: '',
+    city: '',
+    district: '',
+  });
   const [addressDetail, setAddressDetail] = useState('');
   const [firstInterviewAt, setFirstInterviewAt] = useState('');
   const [firstInterviewFormat, setFirstInterviewFormat] = useState<RoundFormat>('online_video');
@@ -146,10 +169,10 @@ export default function OpportunityForm() {
           ...opp,
           weekend_policy: opp.weekend_policy ?? '',
         });
-        // Try to split the stored city string into city + district. The legacy
-        // single-string format may not match, in which case we leave the picker
-        // empty and the user re-picks.
-        const parsed = parseStoredCity(opp.city ?? '');
+        // Try to split the stored city string into province/city/district. The
+        // legacy single-string format may not match, in which case we leave the
+        // picker empty and the user re-picks.
+        const parsed = parseStoredLocation(opp.province ?? null, opp.city ?? null);
         setCityValue(parsed);
         setAddressDetail(opp.address ?? '');
         const w = parseWorkHours(opp.work_hours);
@@ -185,6 +208,7 @@ export default function OpportunityForm() {
       const payload = {
         ...form,
         weekend_policy: form.weekend_policy || null,
+        province: cityValue.province || null,
         city: fullCity || null,
         address: trimmedDetail || null,
         salary_range: form.salary_range?.trim() || null,
@@ -206,13 +230,14 @@ export default function OpportunityForm() {
         const created = await api.opportunities.create(payload);
         opportunityId = created.id;
         if (firstInterviewAt) {
+          const roundLocation = [fullCity, trimmedDetail].filter(Boolean).join(' ');
           try {
             await api.rounds.create(opportunityId, {
               round_number: 1,
               round_type: 'tech_1',
               format: firstInterviewFormat,
               scheduled_at: firstInterviewAt.length === 16 ? firstInterviewAt + ':00' : firstInterviewAt,
-              location: fullCity || null,
+              location: roundLocation || null,
               outcome: 'pending',
             });
           } catch (roundErr) {

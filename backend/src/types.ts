@@ -30,6 +30,7 @@ export interface Opportunity {
   id: number;
   company_name: string;
   position_name: string;
+  province: string | null;
   city: string | null;
   address: string | null;
   salary_range: string | null;

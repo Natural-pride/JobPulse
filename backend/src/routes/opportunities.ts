@@ -38,11 +38,11 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
     const data = parse.data;
     const stmt = db.prepare(`
       INSERT INTO opportunities (
-        company_name, position_name, city, address, salary_range, benefits,
+        company_name, position_name, province, city, address, salary_range, benefits,
         weekend_policy, work_hours, jd_text, jd_url, source, contact_info,
         status, final_salary, final_benefits, notes
       ) VALUES (
-        @company_name, @position_name, @city, @address, @salary_range, @benefits,
+        @company_name, @position_name, @province, @city, @address, @salary_range, @benefits,
         @weekend_policy, @work_hours, @jd_text, @jd_url, @source, @contact_info,
         @status, @final_salary, @final_benefits, @notes
       )
@@ -50,6 +50,7 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
     const result = stmt.run({
       company_name: data.company_name,
       position_name: data.position_name,
+      province: data.province ?? null,
       city: data.city ?? null,
       address: data.address ?? null,
       salary_range: data.salary_range ?? null,
@@ -88,6 +89,7 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
     const merged = {
       company_name: data.company_name ?? existing.company_name,
       position_name: data.position_name ?? existing.position_name,
+      province: data.province !== undefined ? data.province : existing.province,
       city: data.city !== undefined ? data.city : existing.city,
       address: data.address !== undefined ? data.address : existing.address,
       salary_range:
@@ -116,7 +118,7 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
     db.prepare(
       `UPDATE opportunities SET
         company_name=@company_name, position_name=@position_name,
-        city=@city, address=@address, salary_range=@salary_range,
+        province=@province, city=@city, address=@address, salary_range=@salary_range,
         benefits=@benefits, weekend_policy=@weekend_policy,
         work_hours=@work_hours, jd_text=@jd_text, jd_url=@jd_url,
         source=@source, contact_info=@contact_info, status=@status,

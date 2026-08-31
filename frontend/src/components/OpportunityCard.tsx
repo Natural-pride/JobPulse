@@ -36,7 +36,7 @@ export default function OpportunityCard({
           <div className="text-sm text-neutral-500 mt-1 truncate">
             {[
               opportunity.salary_range,
-              opportunity.city,
+              [opportunity.province, opportunity.city].filter(Boolean).join(' '),
               opportunity.work_hours,
               opportunity.weekend_policy
                 ? WEEKEND_POLICY_META[opportunity.weekend_policy]

@@ -21,6 +21,7 @@ export function initDb(dbPath: string): Database.Database {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       company_name TEXT NOT NULL,
       position_name TEXT NOT NULL,
+      province TEXT,
       city TEXT,
       address TEXT,
       salary_range TEXT,
@@ -63,12 +64,18 @@ export function initDb(dbPath: string): Database.Database {
       ON interview_rounds(opportunity_id);
   `);
 
-  // One-shot migration: has_weekends_off (INTEGER 0/1) → weekend_policy (TEXT enum).
-  // For dev DBs created under the old schema, copy data across then drop the old column.
-  // The old data has 0 (no) → NULL, 1 (yes) → 'double_off'.
+  // One-shot migrations for existing opportunities tables.
   const cols = instance
     .prepare("PRAGMA table_info(opportunities)")
     .all() as Array<{ name: string }>;
+
+  // 1. Add `province` column. Old rows keep province = NULL; the UI handles it.
+  if (!cols.some((c) => c.name === 'province')) {
+    instance.exec(`ALTER TABLE opportunities ADD COLUMN province TEXT`);
+  }
+
+  // 2. has_weekends_off (INTEGER 0/1) → weekend_policy (TEXT enum).
+  //    0 → NULL, 1 → 'double_off'. Drop the legacy column on SQLite 3.35+.
   const hasOld = cols.some((c) => c.name === 'has_weekends_off');
   const hasNew = cols.some((c) => c.name === 'weekend_policy');
   if (hasOld && !hasNew) {

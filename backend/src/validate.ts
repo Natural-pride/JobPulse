@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const opportunityCreateSchema = z.object({
   company_name: z.string().min(1),
   position_name: z.string().min(1),
+  province: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
   address: z.string().nullable().optional(),
   salary_range: z.string().nullable().optional(),

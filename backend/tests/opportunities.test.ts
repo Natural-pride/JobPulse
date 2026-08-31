@@ -122,4 +122,31 @@ describe('Opportunities API', () => {
       });
     expect(res.status).toBe(400);
   });
+
+  it('province roundtrips on create/get/update', async () => {
+    const create = await request(app)
+      .post('/api/opportunities')
+      .send({
+        company_name: 'Acme',
+        position_name: 'Backend',
+        province: '广东省',
+        city: '深圳市南山区',
+        address: '枫信科创中心 4 楼 466',
+      });
+    expect(create.status).toBe(201);
+    expect(create.body.province).toBe('广东省');
+    expect(create.body.city).toBe('深圳市南山区');
+    expect(create.body.address).toBe('枫信科创中心 4 楼 466');
+
+    const get = await request(app).get(`/api/opportunities/${create.body.id}`);
+    expect(get.body.province).toBe('广东省');
+    expect(get.body.city).toBe('深圳市南山区');
+
+    const update = await request(app)
+      .put(`/api/opportunities/${create.body.id}`)
+      .send({ province: '北京市', city: '北京市朝阳区' });
+    expect(update.status).toBe(200);
+    expect(update.body.province).toBe('北京市');
+    expect(update.body.city).toBe('北京市朝阳区');
+  });
 });
