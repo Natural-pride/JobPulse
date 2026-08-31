@@ -7,6 +7,14 @@ import { STATUS_META } from '../lib/status';
 
 type FilterValue = OpportunityStatus | 'all';
 
+const STATUS_DOT: Record<OpportunityStatus, string> = {
+  in_progress: 'bg-blue-800',
+  offered: 'bg-green-700',
+  accepted: 'bg-teal-700',
+  rejected: 'bg-red-700',
+  withdrawn: 'bg-neutral-600',
+};
+
 export default function OpportunityList() {
   const [data, setData] = useState<{ opp: Opportunity; rounds: InterviewRound[] }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,45 +45,74 @@ export default function OpportunityList() {
     });
   }, [data, filter, search]);
 
-  if (loading) return <div className="text-slate-500">加载中…</div>;
+  if (loading) return <div className="text-neutral-500 text-sm">加载中…</div>;
 
   return (
-    <div>
+    <div className="max-w-5xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">面试机会</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">面试机会</h1>
         <Link
           to="/opportunities/new"
-          className="px-4 py-2 bg-brand-500 text-white rounded hover:bg-brand-600"
+          className="inline-flex items-center gap-2 bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-800 active:bg-indigo-900 transition-colors"
         >
-          + 新建
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span>新建</span>
         </Link>
       </div>
 
-      <div className="flex gap-3 mb-4">
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as FilterValue)}
-          className="border border-slate-300 rounded px-3 py-1.5"
-        >
-          <option value="all">全部</option>
-          {(Object.keys(STATUS_META) as OpportunityStatus[]).map((s) => (
-            <option key={s} value={s}>
-              {STATUS_META[s].label}
-            </option>
-          ))}
-        </select>
+      <div className="mb-4">
         <input
           type="text"
           placeholder="搜索公司或岗位"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 border border-slate-300 rounded px-3 py-1.5"
+          className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm placeholder-neutral-400 hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
         />
       </div>
 
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          type="button"
+          onClick={() => setFilter('all')}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            filter === 'all'
+              ? 'bg-indigo-700 text-white'
+              : 'bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-300'
+          }`}
+        >
+          全部
+        </button>
+        {(Object.keys(STATUS_META) as OpportunityStatus[]).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setFilter(s)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              filter === s
+                ? 'bg-indigo-700 text-white'
+                : 'bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-300'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${filter === s ? 'bg-white/80' : STATUS_DOT[s]}`} aria-hidden />
+            {STATUS_META[s].label}
+          </button>
+        ))}
+      </div>
+
       {filtered.length === 0 ? (
-        <div className="text-slate-500 text-sm">
-          {data.length === 0 ? '还没有面试机会，点右上角"新建"开始。' : '没有匹配的结果。'}
+        <div className="bg-white border border-neutral-200 rounded-xl p-10 shadow-xs text-center">
+          <div className="flex justify-center mb-4">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-indigo-200" aria-hidden>
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+            </svg>
+          </div>
+          <div className="text-sm text-neutral-500">
+            {data.length === 0 ? '还没有面试机会，点右上角"新建"开始。' : '没有匹配的结果。'}
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-3">

@@ -1,11 +1,19 @@
 import { STATUS_META } from '../lib/status';
 import type { OpportunityStatus } from '../types';
 
+const STATUS_DOT_COLOR: Record<OpportunityStatus, string> = {
+  in_progress: 'bg-blue-800',
+  offered: 'bg-green-700',
+  accepted: 'bg-teal-700',
+  rejected: 'bg-red-700',
+  withdrawn: 'bg-neutral-600',
+};
+
 export default function StatusBadge({ status }: { status: OpportunityStatus }) {
-  const meta = STATUS_META[status];
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${meta.color} ${meta.bgColor}`}>
-      {meta.label}
+    <span className="inline-flex items-center gap-1.5 text-sm text-neutral-700">
+      <span className={`w-2 h-2 rounded-full ${STATUS_DOT_COLOR[status]}`} aria-hidden />
+      {STATUS_META[status].label}
     </span>
   );
 }

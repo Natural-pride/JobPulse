@@ -11,6 +11,13 @@ interface DashboardData {
   rounds: InterviewRound[];
 }
 
+const OUTCOME_DOT: Record<string, string> = {
+  pending: 'bg-blue-800',
+  passed: 'bg-green-700',
+  failed: 'bg-red-700',
+  cancelled: 'bg-neutral-500',
+};
+
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,14 +42,14 @@ export default function Dashboard() {
     })();
   }, []);
 
-  if (loading) return <div className="text-slate-500">加载中…</div>;
-  if (error) return <div className="text-red-600">{error}</div>;
+  if (loading) return <div className="text-neutral-500 text-sm">加载中…</div>;
+  if (error) return <div className="text-red-700 text-sm">{error}</div>;
 
   const inProgress = data.filter((d) => d.opportunity.status === 'in_progress').length;
   const offered = data.filter(
     (d) => d.opportunity.status === 'offered' || d.opportunity.status === 'accepted'
   ).length;
-  const rejected = data.filter((d) => d.opportunity.status === 'rejected').length;
+  const notPassed = data.filter((d) => d.opportunity.status === 'rejected').length;
 
   const now = Date.now();
   const sevenDays = now + 7 * 24 * 60 * 60 * 1000;
@@ -59,41 +66,55 @@ export default function Dashboard() {
     .sort((a, b) => a.round.scheduled_at.localeCompare(b.round.scheduled_at));
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">仪表盘</h1>
+    <div className="max-w-6xl">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">仪表盘</h1>
         <Link
           to="/opportunities/new"
-          className="px-4 py-2 bg-brand-500 text-white rounded hover:bg-brand-600"
+          className="inline-flex items-center gap-2 bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-800 active:bg-indigo-900 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-700 focus:ring-offset-2"
         >
-          + 新建面试机会
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span>新建面试</span>
         </Link>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <StatCard label="进行中" value={inProgress} color="text-blue-600" />
-        <StatCard label="已 Offer" value={offered} color="text-green-600" />
-        <StatCard label="已拒绝" value={rejected} color="text-red-600" />
+      <div className="grid grid-cols-4 gap-4 mb-10">
+        <StatCard label="进行中" value={inProgress} color="text-blue-800" accent />
+        <StatCard label="已 Offer" value={offered} color="text-green-700" />
+        <StatCard label="未通过" value={notPassed} color="text-red-700" />
         <StatCard label="总计" value={data.length} />
       </div>
 
-      <h2 className="text-lg font-semibold mb-3">即将到来（7 天内）</h2>
+      <h2 className="text-sm font-medium text-neutral-900 mb-3">即将到来 · 7 天内</h2>
       {upcoming.length === 0 ? (
-        <div className="text-slate-500 text-sm">暂无即将到来的面试</div>
+        <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-xs text-sm text-neutral-500">
+          暂无即将到来的面试
+        </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {upcoming.map(({ round, opportunity }) => (
             <Link
               key={round.id}
               to={`/opportunities/${opportunity.id}`}
-              className="block bg-white rounded-lg border border-slate-200 p-3 hover:border-brand-500 transition"
+              className="block bg-white border border-neutral-200 rounded-xl p-5 shadow-xs hover:border-neutral-300 hover:shadow-sm transition"
             >
-              <div className="font-medium text-slate-900">
-                {opportunity.company_name} · {opportunity.position_name}
-              </div>
-              <div className="text-sm text-slate-500 mt-1">
-                {ROUND_TYPE_META[round.round_type]} · {formatDateTime(round.scheduled_at)} · {FORMAT_META[round.format]}
-                {round.location ? ` (${round.location})` : ''}
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="font-semibold text-neutral-900 truncate">
+                    {opportunity.company_name} · {opportunity.position_name}
+                  </div>
+                  <div className="text-sm text-neutral-500 mt-1.5 tabular-nums">
+                    {ROUND_TYPE_META[round.round_type]} · {formatDateTime(round.scheduled_at)} · {FORMAT_META[round.format]}
+                    {round.location ? ` · ${round.location}` : ''}
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 text-sm text-blue-800 shrink-0">
+                  <span className={`w-2 h-2 rounded-full ${OUTCOME_DOT[round.outcome]}`} aria-hidden />
+                  待面试
+                </span>
               </div>
             </Link>
           ))}

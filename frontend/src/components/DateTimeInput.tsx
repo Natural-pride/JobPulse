@@ -32,7 +32,7 @@ export default function DateTimeInput({
       locale={zhCN}
       placeholderText="点击选择日期时间"
       isClearable
-      className="w-full border border-slate-300 rounded px-3 py-1.5 focus:border-brand-500 focus:outline-none"
+      className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
       wrapperClassName="w-full"
     />
   );

@@ -124,22 +124,29 @@ export default function RoundModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h2 className="text-lg font-semibold">
+        <div className="flex items-center justify-between px-7 py-5 border-b border-neutral-100">
+          <h2 className="text-lg font-semibold text-neutral-900">
             {initial ? '编辑面试轮次' : '添加面试轮次'}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
-            ✕
+          <button
+            onClick={onClose}
+            className="text-neutral-400 hover:text-neutral-700 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-neutral-100 transition-colors"
+            aria-label="关闭"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="px-7 py-6 space-y-4">
           {error && <div className="text-red-600 text-sm">{error}</div>}
 
           <div className="grid grid-cols-2 gap-4">
@@ -149,14 +156,14 @@ export default function RoundModal({
                 min={1}
                 value={form.round_number}
                 onChange={(e) => update('round_number', Number(e.target.value))}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+                className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
               />
             </Field>
             <Field label="轮次类型">
               <select
                 value={form.round_type}
                 onChange={(e) => update('round_type', e.target.value as RoundType)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+                className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
               >
                 {(Object.keys(ROUND_TYPE_META) as RoundType[]).map((k) => (
                   <option key={k} value={k}>
@@ -169,7 +176,7 @@ export default function RoundModal({
               <select
                 value={form.format}
                 onChange={(e) => update('format', e.target.value as RoundFormat)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+                className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
               >
                 {(Object.keys(FORMAT_META) as RoundFormat[]).map((k) => (
                   <option key={k} value={k}>
@@ -189,7 +196,8 @@ export default function RoundModal({
               <input
                 value={form.location}
                 onChange={(e) => update('location', e.target.value)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+                className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
+                placeholder="线上 / 线下地址"
               />
             </Field>
             <Field label="时长（分钟）">
@@ -198,13 +206,14 @@ export default function RoundModal({
                 min={1}
                 value={form.duration_minutes}
                 onChange={(e) => update('duration_minutes', e.target.value)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+                className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
+                placeholder="60"
               />
             </Field>
           </div>
 
-          <div className="border-t border-slate-200 pt-4">
-            <div className="text-sm text-slate-500 mb-2">面试后填写（可后补）</div>
+          <div className="border-t border-neutral-100 pt-4">
+            <div className="text-xs font-medium text-neutral-500 tracking-wide uppercase mb-3">面试后填写（可后补）</div>
             <div className="grid grid-cols-2 gap-4">
               <Field label="实际时间">
                 <DateTimeInput
@@ -216,7 +225,7 @@ export default function RoundModal({
                 <select
                   value={form.outcome}
                   onChange={(e) => update('outcome', e.target.value as RoundOutcome)}
-                  className="w-full border border-slate-300 rounded px-3 py-1.5"
+                  className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
                 >
                   {(Object.keys(OUTCOME_META) as RoundOutcome[]).map((k) => (
                     <option key={k} value={k}>
@@ -236,39 +245,41 @@ export default function RoundModal({
               <textarea
                 value={form.questions}
                 onChange={(e) => update('questions', e.target.value)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+                className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
                 rows={3}
+                placeholder="问了哪些问题..."
               />
             </Field>
             <Field label="我的表现">
               <textarea
                 value={form.my_performance}
                 onChange={(e) => update('my_performance', e.target.value)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+                className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
                 rows={3}
+                placeholder="自我感觉哪里答得好、哪里没答上来..."
               />
             </Field>
             <Field label="备注">
               <textarea
                 value={form.notes}
                 onChange={(e) => update('notes', e.target.value)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+                className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
                 rows={2}
               />
             </Field>
           </div>
         </div>
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-slate-200">
+        <div className="flex justify-end gap-2 px-7 py-5 border-t border-neutral-100">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-slate-300 rounded hover:bg-slate-50"
+            className="bg-white text-neutral-700 border border-neutral-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
           >
             取消
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-brand-500 text-white rounded hover:bg-brand-600 disabled:opacity-50"
+            className="bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-800 active:bg-indigo-900 disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-700 focus:ring-offset-2"
           >
             {saving ? '保存中…' : '保存'}
           </button>
@@ -282,9 +293,9 @@ function Field({ label, required, children }: { label: string; required?: boolea
   return (
     <div>
       {label && (
-        <label className="block text-sm font-medium text-slate-700 mb-1">
+        <label className="block text-xs font-medium text-neutral-700 tracking-wide uppercase mb-1.5">
           {label}
-          {required && <span className="text-red-500 ml-0.5">*</span>}
+          {required && <span className="text-red-700 ml-0.5">*</span>}
         </label>
       )}
       {children}

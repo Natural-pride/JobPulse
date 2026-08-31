@@ -498,7 +498,7 @@ export default function OpportunityForm() {
                   <option value="in_progress">进行中</option>
                   <option value="offered">已 Offer</option>
                   <option value="accepted">已接受</option>
-                  <option value="rejected">已拒绝</option>
+                  <option value="rejected">未通过</option>
                   <option value="withdrawn">我已撤回</option>
                 </select>
               </Field>
