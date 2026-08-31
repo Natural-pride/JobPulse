@@ -1,14 +1,44 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
 build/
+*.tsbuildinfo
+
+# SQLite databases (user data + test DBs)
 data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Logs
 *.log
+
+# OS / editor
 .DS_Store
 .vscode/
-.env
-.env.local
+
+# Env files — NEVER commit secrets
+.env*
+!.env.example
+
+# Test coverage
 coverage/
-*.tsbuildinfo
+
+# Vite generated
 vite.config.d.ts
 vite.config.js
+
+# Superdesign scratch space
 .superdesign/tmp/
+
+# Ad-hoc debug scripts accidentally left at project root
+check-*.cjs
+debug-*.js
+
+# Bug-recovery artifacts (e.g. orphan backend/ from cwd-misconfig bugs)
+_orphan_*/
