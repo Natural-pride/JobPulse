@@ -124,7 +124,7 @@ export default function OpportunityTimeline({
             >
               <Icon />
             </span>
-            <div className="flex items-baseline justify-between gap-3">
+            <div className="flex items-baseline justify-between gap-3 pl-3">
               <div
                 className={`text-sm font-medium ${EVENT_TEXT_COLOR[e.type]}`}
               >
@@ -135,7 +135,7 @@ export default function OpportunityTimeline({
               </div>
             </div>
             {e.subtitle && (
-              <div className="text-xs text-neutral-500 mt-0.5">
+              <div className="text-xs text-neutral-500 mt-0.5 pl-3">
                 {e.roundId ? (
                   <button
                     type="button"
@@ -167,8 +167,8 @@ export default function OpportunityTimeline({
           aria-hidden
           className="absolute -left-[14px] top-1 w-3 h-3 rounded-full bg-white border-2 border-slate-300"
         />
-        <div className="text-xs text-slate-400 italic">现在 · 持续关注</div>
-        <div className="text-[11px] text-slate-400 tabular-nums mt-0.5">
+        <div className="text-xs text-slate-400 italic pl-3">现在 · 持续关注</div>
+        <div className="text-[11px] text-slate-400 tabular-nums mt-0.5 pl-3">
           {format(now, 'yyyy-MM-dd HH:mm', { locale: zhCN })}
         </div>
       </li>
