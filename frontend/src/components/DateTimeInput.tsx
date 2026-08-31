@@ -28,6 +28,7 @@ export default function DateTimeInput({
       showTimeSelect
       timeIntervals={10}
       timeCaption="时间"
+      timeFormat="HH:mm"
       dateFormat="yyyy-MM-dd HH:mm"
       locale={zhCN}
       placeholderText="点击选择日期时间"

@@ -27,29 +27,6 @@ const empty: FormState = {
   notes: '',
 };
 
-const SALARY_RANGES = [
-  { value: '', label: '（不填）' },
-  { value: '8-10K', label: '8-10K' },
-  { value: '10-12K', label: '10-12K' },
-  { value: '12-15K', label: '12-15K' },
-  { value: '15-20K', label: '15-20K' },
-  { value: '20-25K', label: '20-25K' },
-  { value: '25-30K', label: '25-30K' },
-  { value: '30-40K', label: '30-40K' },
-  { value: '40-50K', label: '40-50K' },
-  { value: '50K+', label: '50K+' },
-  { value: '__custom__', label: '自定义...' },
-];
-
-const SALARY_MONTHS = [
-  { value: '', label: '（不填）' },
-  { value: '12', label: '12 薪' },
-  { value: '13', label: '13 薪' },
-  { value: '14', label: '14 薪' },
-  { value: '15', label: '15 薪' },
-  { value: '16', label: '16 薪' },
-];
-
 const WORK_HOURS_PRESETS = [
   { value: '', label: '（不填）' },
   { value: '9:00-18:00', label: '9:00-18:00' },
@@ -69,33 +46,6 @@ const BENEFIT_TAGS = [
   '体检', '团建', '培训', '带薪年假', '加班费',
   '节日福利', '健身房', '免费零食',
 ];
-
-function parseSalary(s: string | null): { preset: string; custom: string; months: string } {
-  if (!s) return { preset: '', custom: '', months: '' };
-  const m = s.match(/^(.+?)\*(\d+)$/);
-  if (m) {
-    const range = m[1];
-    const months = m[2];
-    const match = SALARY_RANGES.find((r) => r.value === range);
-    return {
-      preset: match ? match.value : '__custom__',
-      custom: match ? '' : range,
-      months,
-    };
-  }
-  const match = SALARY_RANGES.find((r) => r.value === s);
-  return {
-    preset: match ? match.value : '__custom__',
-    custom: match ? '' : s,
-    months: '',
-  };
-}
-
-function buildSalary(preset: string, custom: string, months: string): string | null {
-  const range = preset === '__custom__' ? custom.trim() : preset;
-  if (!range) return null;
-  return months ? `${range}*${months}` : range;
-}
 
 function parseWorkHours(s: string | null): { preset: string; custom: string } {
   if (!s) return { preset: '', custom: '' };
@@ -151,10 +101,7 @@ export default function OpportunityForm() {
   const [firstInterviewFormat, setFirstInterviewFormat] = useState<RoundFormat>('online_video');
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  // Structured-field state (replaces free-text inputs for salary/work_hours/benefits)
-  const [salaryPreset, setSalaryPreset] = useState('');
-  const [salaryCustom, setSalaryCustom] = useState('');
-  const [salaryMonths, setSalaryMonths] = useState('');
+  // Structured-field state (work_hours uses dropdown; benefits multi-select)
   const [workHoursPreset, setWorkHoursPreset] = useState('');
   const [workHoursCustom, setWorkHoursCustom] = useState('');
   const [selectedBenefits, setSelectedBenefits] = useState<Set<string>>(new Set());
@@ -170,10 +117,6 @@ export default function OpportunityForm() {
           has_weekends_off: Boolean(opp.has_weekends_off),
         });
         setLocation(opp.city ?? '');
-        const s = parseSalary(opp.salary_range);
-        setSalaryPreset(s.preset);
-        setSalaryCustom(s.custom);
-        setSalaryMonths(s.months);
         const w = parseWorkHours(opp.work_hours);
         setWorkHoursPreset(w.preset);
         setWorkHoursCustom(w.custom);
@@ -206,7 +149,7 @@ export default function OpportunityForm() {
         has_weekends_off: form.has_weekends_off ? 1 : 0,
         city: trimmedLocation || null,
         address: null,
-        salary_range: buildSalary(salaryPreset, salaryCustom, salaryMonths),
+        salary_range: form.salary_range?.trim() || null,
         benefits: buildBenefits(selectedBenefits, benefitsOther),
         work_hours: buildWorkHours(workHoursPreset, workHoursCustom),
         jd_text: form.jd_text || null,
@@ -257,7 +200,7 @@ export default function OpportunityForm() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="px-4 py-2 border border-slate-300 rounded hover:bg-slate-50"
+            className="bg-white text-neutral-700 border border-neutral-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
           >
             取消
           </button>
@@ -265,7 +208,7 @@ export default function OpportunityForm() {
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-brand-500 text-white rounded hover:bg-brand-600 disabled:opacity-50"
+            className="bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-800 active:bg-indigo-900 disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-700 focus:ring-offset-2"
           >
             {saving ? '保存中…' : '保存'}
           </button>
@@ -348,38 +291,12 @@ export default function OpportunityForm() {
         </div>
 
         <Field label="薪资范围">
-          <div className="flex gap-2">
-            <select
-              value={salaryPreset}
-              onChange={(e) => setSalaryPreset(e.target.value)}
-              className="flex-1 border border-slate-300 rounded px-3 py-1.5"
-            >
-              {SALARY_RANGES.map((r) => (
-                <option key={r.value || 'empty'} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={salaryMonths}
-              onChange={(e) => setSalaryMonths(e.target.value)}
-              className="w-28 border border-slate-300 rounded px-3 py-1.5"
-            >
-              {SALARY_MONTHS.map((m) => (
-                <option key={m.value || 'empty'} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          {salaryPreset === '__custom__' && (
-            <input
-              value={salaryCustom}
-              onChange={(e) => setSalaryCustom(e.target.value)}
-              className="w-full mt-2 border border-slate-300 rounded px-3 py-1.5"
-              placeholder="例：30-50K / 18-25K / 面议"
-            />
-          )}
+          <input
+            value={form.salary_range ?? ''}
+            onChange={(e) => update('salary_range', e.target.value)}
+            className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm placeholder-neutral-400 hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
+            placeholder="例：10K-12K*13 / 25-40K / 面议"
+          />
         </Field>
       </div>
 
@@ -401,8 +318,8 @@ export default function OpportunityForm() {
                     key={tag}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 border rounded cursor-pointer text-sm transition ${
                       selectedBenefits.has(tag)
-                        ? 'border-brand-500 bg-brand-50 text-brand-700'
-                        : 'border-slate-200 hover:bg-slate-50'
+                        ? 'border-indigo-700 bg-indigo-700 text-white shadow-sm'
+                        : 'border-neutral-200 hover:border-neutral-300 text-neutral-700'
                     }`}
                   >
                     <input
