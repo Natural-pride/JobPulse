@@ -1,20 +1,98 @@
 import { Router } from 'express';
 import type Database from 'better-sqlite3';
+import { z } from 'zod';
 import {
   opportunityCreateSchema,
   opportunityUpdateSchema,
 } from '../validate.js';
-import type { Opportunity } from '../types.js';
+import type { Opportunity, OpportunityStatus } from '../types.js';
+
+export interface ListResult {
+  items: Opportunity[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+const listQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  status: z
+    .enum([
+      'in_progress',
+      'offered',
+      'accepted',
+      'rejected',
+      'withdrawn',
+      'declined',
+      'accepted_then_left',
+    ])
+    .optional(),
+  search: z.string().trim().min(1).max(100).optional(),
+});
 
 export function createOpportunitiesRouter(db: Database.Database): Router {
   const router = Router();
 
   // GET /api/opportunities
-  router.get('/', (_req, res) => {
+  // Optional query params: page, pageSize, status, search
+  // - No params → return all (back-compat for dashboard fetch)
+  // - page provided → return paginated response { items, total, page, pageSize, hasMore }
+  router.get('/', (req, res) => {
+    const raw = req.query as Record<string, unknown>;
+    const wantsPaging =
+      raw.page !== undefined ||
+      raw.pageSize !== undefined ||
+      raw.status !== undefined ||
+      raw.search !== undefined;
+
+    if (!wantsPaging) {
+      const rows = db
+        .prepare('SELECT * FROM opportunities ORDER BY created_at DESC')
+        .all() as Opportunity[];
+      res.json(rows);
+      return;
+    }
+
+    const parsed = listQuerySchema.safeParse(raw);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const { page, pageSize, status, search } = parsed.data;
+    const offset = (page - 1) * pageSize;
+
+    const where: string[] = [];
+    const params: unknown[] = [];
+    if (status) {
+      where.push('status = ?');
+      params.push(status);
+    }
+    if (search) {
+      where.push('(company_name LIKE ? OR position_name LIKE ?)');
+      const like = `%${search}%`;
+      params.push(like, like);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    const totalRow = db
+      .prepare(`SELECT COUNT(*) as n FROM opportunities ${whereSql}`)
+      .get(...params) as { n: number };
     const rows = db
-      .prepare('SELECT * FROM opportunities ORDER BY created_at DESC')
-      .all() as Opportunity[];
-    res.json(rows);
+      .prepare(
+        `SELECT * FROM opportunities ${whereSql} ORDER BY created_at DESC LIMIT ? OFFSET ?`
+      )
+      .all(...params, pageSize, offset) as Opportunity[];
+
+    const result: ListResult = {
+      items: rows,
+      total: totalRow.n,
+      page,
+      pageSize,
+      hasMore: offset + rows.length < totalRow.n,
+    };
+    res.json(result);
   });
 
   // GET /api/opportunities/:id

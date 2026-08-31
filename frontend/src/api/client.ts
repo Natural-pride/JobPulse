@@ -1,4 +1,4 @@
-import type { Opportunity, InterviewRound } from '../types';
+import type { Opportunity, InterviewRound, OpportunityStatus } from '../types';
 
 export type ActionType =
   | 'follow_up'
@@ -20,6 +20,14 @@ export interface ActionItem {
   days_idle?: number;
 }
 
+export interface PagedOpportunities {
+  items: Opportunity[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
 const BASE = '/api';
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -38,6 +46,20 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 export const api = {
   opportunities: {
     list: () => request<Opportunity[]>(`/opportunities`),
+    listPaged: (params: {
+      page?: number;
+      pageSize?: number;
+      status?: OpportunityStatus;
+      search?: string;
+    } = {}) => {
+      const qs = new URLSearchParams();
+      if (params.page !== undefined) qs.set('page', String(params.page));
+      if (params.pageSize !== undefined) qs.set('pageSize', String(params.pageSize));
+      if (params.status) qs.set('status', params.status);
+      if (params.search) qs.set('search', params.search);
+      const suffix = qs.toString() ? `?${qs.toString()}` : '';
+      return request<PagedOpportunities>(`/opportunities${suffix}`);
+    },
     get: (id: number) => request<Opportunity>(`/opportunities/${id}`),
     create: (data: Partial<Opportunity>) =>
       request<Opportunity>(`/opportunities`, {
