@@ -457,7 +457,7 @@ export default function OpportunityForm() {
                 />
               )}
             </Field>
-            <Field label="双休">
+            <Field label="周末制度">
               <div className="flex p-1 bg-slate-100 rounded-lg gap-1">
                 <button
                   type="button"

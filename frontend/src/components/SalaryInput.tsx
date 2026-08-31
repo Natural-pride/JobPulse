@@ -73,8 +73,12 @@ export default function SalaryInput({
     onChange(serializeSalary(next));
   }
 
-  const inputClass =
+  const fullInputClass =
     'w-full border border-slate-300 rounded px-3 py-1.5 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition';
+
+  // Range-mode inputs sit in a horizontal flex row, so they must not be `w-full`.
+  const inlineInputClass =
+    'border border-slate-300 rounded px-2.5 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition';
 
   return (
     <div className={`space-y-2 ${className ?? ''}`}>
@@ -120,7 +124,7 @@ export default function SalaryInput({
         <input
           value={parsed.min}
           onChange={(e) => update({ ...parsed, min: e.target.value })}
-          className={inputClass}
+          className={fullInputClass}
           placeholder="例：10K-12K*13 / 25-40K / 面议"
         />
       )}
@@ -132,46 +136,53 @@ export default function SalaryInput({
       )}
 
       {parsed.mode === 'range' && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
           <input
             type="number"
             inputMode="decimal"
             min={0}
             value={parsed.min}
             onChange={(e) => update({ ...parsed, min: e.target.value })}
-            className={`${inputClass} w-24 tabular-nums`}
+            className={`${inlineInputClass} w-20 tabular-nums`}
             placeholder="下限"
+            aria-label="薪资下限"
           />
-          <span className="text-slate-400">—</span>
+          <span className="text-slate-400 select-none">—</span>
           <input
             type="number"
             inputMode="decimal"
             min={0}
             value={parsed.max}
             onChange={(e) => update({ ...parsed, max: e.target.value })}
-            className={`${inputClass} w-24 tabular-nums`}
+            className={`${inlineInputClass} w-20 tabular-nums`}
             placeholder="上限"
+            aria-label="薪资上限"
           />
           <select
             value={parsed.unit}
             onChange={(e) => update({ ...parsed, unit: e.target.value as 'K' | '万' })}
-            className={`${inputClass} w-20`}
+            className={`${inlineInputClass} w-16`}
+            aria-label="薪资单位"
           >
             <option value="K">K</option>
             <option value="万">万</option>
           </select>
-          <span className="text-slate-400 text-sm">*</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={36}
-            value={parsed.months}
-            onChange={(e) => update({ ...parsed, months: e.target.value })}
-            className={`${inputClass} w-20 tabular-nums`}
-            placeholder="13"
-          />
-          <span className="text-slate-500 text-sm">薪（选填）</span>
+          <span className="text-slate-300 select-none">|</span>
+          <span className="text-slate-500 text-xs whitespace-nowrap">
+            年薪
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={36}
+              value={parsed.months}
+              onChange={(e) => update({ ...parsed, months: e.target.value })}
+              className={`${inlineInputClass} w-14 tabular-nums mx-1.5`}
+              placeholder="13"
+              aria-label="每年发几个月薪资（选填）"
+            />
+            薪（选填）
+          </span>
         </div>
       )}
     </div>

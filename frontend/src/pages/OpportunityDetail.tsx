@@ -239,7 +239,7 @@ export default function OpportunityDetail() {
         <OverviewCard label="工时" value={opp.work_hours || '—'} />
         <OverviewCard label="福利" value={opp.benefits || '—'} />
         <OverviewCard
-          label="双休"
+          label="周末制度"
           value={opp.weekend_policy ? WEEKEND_POLICY_META[opp.weekend_policy] : '—'}
         />
       </div>
