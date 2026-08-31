@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const openInstances = new Set<Database.Database>();
 
@@ -95,9 +96,16 @@ export function initDb(dbPath: string): Database.Database {
 }
 
 export function getDb(): Database.Database {
-  if (!db) {
-    const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'data', 'jobpulse.db');
-    db = initDb(dbPath);
+  if (db) return db;
+  if (process.env.DB_PATH) {
+    db = initDb(process.env.DB_PATH);
+  } else {
+    // Resolve relative to the compiled source file (backend/src/db.ts),
+    // not cwd — running `npm run dev` from a different directory would otherwise
+    // create a stray empty DB at <cwd>/data/jobpulse.db.
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const defaultPath = path.resolve(here, '..', 'data', 'jobpulse.db');
+    db = initDb(defaultPath);
   }
   return db;
 }
