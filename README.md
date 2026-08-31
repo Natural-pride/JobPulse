@@ -116,7 +116,20 @@ npm test
 
 ## 贡献
 
-直接 PR 或者 issue 都可以。提交前跑一下 `npm test`，后端新接口记得带 Zod 校验和测试。
+直接 PR 或者 issue 都可以。提交前跑一下 `npm test`，后端新接口记得带 Zod 校验和测试。详细规范看 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## 文档
+
+| 文档 | 内容 |
+|---|---|
+| [CHANGELOG.md](CHANGELOG.md) | 每个版本改了什么 |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | 怎么参与开发 |
+| [docs/架构.md](docs/架构.md) | 前后端结构、模块划分、设计决策 |
+| [docs/数据模型.md](docs/数据模型.md) | 两张表的字段、索引、迁移历史 |
+| [docs/API.md](docs/API.md) | REST 端点、参数、响应、错误码 |
+| [docs/开发.md](docs/开发.md) | 环境、命令、目录约定、调试技巧 |
+| [docs/路线图.md](docs/路线图.md) | 状态、限制、短期/长期计划 |
+| [docs/README.md](docs/README.md) | 文档目录 |
 
 ## License
 

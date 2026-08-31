@@ -39,6 +39,7 @@ vite.config.js
 # Ad-hoc debug scripts accidentally left at project root
 check-*.cjs
 debug-*.js
+find-*.cjs
 
 # Bug-recovery artifacts (e.g. orphan backend/ from cwd-misconfig bugs)
-_orphan_*/
+_orphan_*
