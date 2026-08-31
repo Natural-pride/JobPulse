@@ -1,0 +1,148 @@
+import { Router } from 'express';
+import type Database from 'better-sqlite3';
+import {
+  opportunityCreateSchema,
+  opportunityUpdateSchema,
+} from '../validate.js';
+import type { Opportunity } from '../types.js';
+
+export function createOpportunitiesRouter(db: Database.Database): Router {
+  const router = Router();
+
+  // GET /api/opportunities
+  router.get('/', (_req, res) => {
+    const rows = db
+      .prepare('SELECT * FROM opportunities ORDER BY created_at DESC')
+      .all() as Opportunity[];
+    res.json(rows);
+  });
+
+  // GET /api/opportunities/:id
+  router.get('/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const row = db
+      .prepare('SELECT * FROM opportunities WHERE id = ?')
+      .get(id) as Opportunity | undefined;
+    if (!row) {
+      return res.status(404).json({ error: 'Opportunity not found' });
+    }
+    res.json(row);
+  });
+
+  // POST /api/opportunities
+  router.post('/', (req, res) => {
+    const parse = opportunityCreateSchema.safeParse(req.body);
+    if (!parse.success) {
+      return res.status(400).json({ error: parse.error.message });
+    }
+    const data = parse.data;
+    const stmt = db.prepare(`
+      INSERT INTO opportunities (
+        company_name, position_name, city, address, salary_range, benefits,
+        has_weekends_off, work_hours, jd_text, jd_url, source, contact_info,
+        status, final_salary, final_benefits, notes
+      ) VALUES (
+        @company_name, @position_name, @city, @address, @salary_range, @benefits,
+        @has_weekends_off, @work_hours, @jd_text, @jd_url, @source, @contact_info,
+        @status, @final_salary, @final_benefits, @notes
+      )
+    `);
+    const result = stmt.run({
+      company_name: data.company_name,
+      position_name: data.position_name,
+      city: data.city ?? null,
+      address: data.address ?? null,
+      salary_range: data.salary_range ?? null,
+      benefits: data.benefits ?? null,
+      has_weekends_off: data.has_weekends_off ? 1 : 0,
+      work_hours: data.work_hours ?? null,
+      jd_text: data.jd_text ?? null,
+      jd_url: data.jd_url ?? null,
+      source: data.source ?? null,
+      contact_info: data.contact_info ?? null,
+      status: data.status ?? 'in_progress',
+      final_salary: data.final_salary ?? null,
+      final_benefits: data.final_benefits ?? null,
+      notes: data.notes ?? null,
+    });
+    const created = db
+      .prepare('SELECT * FROM opportunities WHERE id = ?')
+      .get(result.lastInsertRowid) as Opportunity;
+    res.status(201).json(created);
+  });
+
+  // PUT /api/opportunities/:id
+  router.put('/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const parse = opportunityUpdateSchema.safeParse(req.body);
+    if (!parse.success) {
+      return res.status(400).json({ error: parse.error.message });
+    }
+    const existing = db
+      .prepare('SELECT * FROM opportunities WHERE id = ?')
+      .get(id) as Opportunity | undefined;
+    if (!existing) {
+      return res.status(404).json({ error: 'Opportunity not found' });
+    }
+    const data = parse.data;
+    const merged = {
+      company_name: data.company_name ?? existing.company_name,
+      position_name: data.position_name ?? existing.position_name,
+      city: data.city !== undefined ? data.city : existing.city,
+      address: data.address !== undefined ? data.address : existing.address,
+      salary_range:
+        data.salary_range !== undefined ? data.salary_range : existing.salary_range,
+      benefits: data.benefits !== undefined ? data.benefits : existing.benefits,
+      has_weekends_off:
+        data.has_weekends_off !== undefined
+          ? data.has_weekends_off
+            ? 1
+            : 0
+          : existing.has_weekends_off,
+      work_hours:
+        data.work_hours !== undefined ? data.work_hours : existing.work_hours,
+      jd_text: data.jd_text !== undefined ? data.jd_text : existing.jd_text,
+      jd_url: data.jd_url !== undefined ? data.jd_url : existing.jd_url,
+      source: data.source !== undefined ? data.source : existing.source,
+      contact_info:
+        data.contact_info !== undefined ? data.contact_info : existing.contact_info,
+      status: data.status ?? existing.status,
+      final_salary:
+        data.final_salary !== undefined ? data.final_salary : existing.final_salary,
+      final_benefits:
+        data.final_benefits !== undefined
+          ? data.final_benefits
+          : existing.final_benefits,
+      notes: data.notes !== undefined ? data.notes : existing.notes,
+    };
+    db.prepare(
+      `UPDATE opportunities SET
+        company_name=@company_name, position_name=@position_name,
+        city=@city, address=@address, salary_range=@salary_range,
+        benefits=@benefits, has_weekends_off=@has_weekends_off,
+        work_hours=@work_hours, jd_text=@jd_text, jd_url=@jd_url,
+        source=@source, contact_info=@contact_info, status=@status,
+        final_salary=@final_salary, final_benefits=@final_benefits,
+        notes=@notes, updated_at=datetime('now')
+      WHERE id=@id`
+    ).run({ ...merged, id });
+    const updated = db
+      .prepare('SELECT * FROM opportunities WHERE id = ?')
+      .get(id) as Opportunity;
+    res.json(updated);
+  });
+
+  // DELETE /api/opportunities/:id
+  router.delete('/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const result = db
+      .prepare('DELETE FROM opportunities WHERE id = ?')
+      .run(id);
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Opportunity not found' });
+    }
+    res.status(204).end();
+  });
+
+  return router;
+}
