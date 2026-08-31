@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { Opportunity, OpportunityStatus, RoundFormat, WeekendPolicy } from '../types';
 import DateTimeInput from '../components/DateTimeInput';
 import CityPicker, { type CityValue } from '../components/CityPicker';
+import SalaryInput from '../components/SalaryInput';
 import { getCities, findProvinceForCity } from '../lib/cityData';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
@@ -353,11 +354,9 @@ export default function OpportunityForm() {
         </div>
 
         <Field label="薪资范围">
-          <input
+          <SalaryInput
             value={form.salary_range ?? ''}
-            onChange={(e) => update('salary_range', e.target.value)}
-            className="w-full bg-white border border-neutral-300 rounded-lg px-3.5 py-2 text-sm placeholder-neutral-400 hover:border-neutral-400 focus:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 transition"
-            placeholder="例：10K-12K*13 / 25-40K / 面议"
+            onChange={(v) => update('salary_range', v)}
           />
         </Field>
 
