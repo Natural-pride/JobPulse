@@ -19,6 +19,13 @@ export type RoundFormat = 'online_video' | 'onsite' | 'phone';
 
 export type RoundOutcome = 'pending' | 'passed' | 'failed' | 'cancelled';
 
+export type WeekendPolicy =
+  | 'double_off'
+  | 'single_off'
+  | 'alternating'
+  | 'compensatory'
+  | 'unknown';
+
 export interface Opportunity {
   id: number;
   company_name: string;
@@ -27,7 +34,7 @@ export interface Opportunity {
   address: string | null;
   salary_range: string | null;
   benefits: string | null;
-  has_weekends_off: number;
+  weekend_policy: WeekendPolicy | null;
   work_hours: string | null;
   jd_text: string | null;
   jd_url: string | null;

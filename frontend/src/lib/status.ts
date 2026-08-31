@@ -1,4 +1,4 @@
-import type { OpportunityStatus, RoundType, RoundFormat, RoundOutcome } from '../types';
+import type { OpportunityStatus, RoundType, RoundFormat, RoundOutcome, WeekendPolicy } from '../types';
 
 export const STATUS_META: Record<
   OpportunityStatus,
@@ -36,4 +36,12 @@ export const OUTCOME_META: Record<
   passed: { label: '已通过', color: 'text-green-700', bgColor: 'bg-green-100' },
   failed: { label: '未通过', color: 'text-red-700', bgColor: 'bg-red-100' },
   cancelled: { label: '已取消', color: 'text-slate-500', bgColor: 'bg-slate-50' },
+};
+
+export const WEEKEND_POLICY_META: Record<WeekendPolicy, string> = {
+  double_off: '双休',
+  single_off: '单休',
+  alternating: '大小周',
+  compensatory: '调休',
+  unknown: '不清楚',
 };

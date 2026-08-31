@@ -7,7 +7,10 @@ export const opportunityCreateSchema = z.object({
   address: z.string().nullable().optional(),
   salary_range: z.string().nullable().optional(),
   benefits: z.string().nullable().optional(),
-  has_weekends_off: z.boolean().optional(),
+  weekend_policy: z
+    .enum(['double_off', 'single_off', 'alternating', 'compensatory', 'unknown'])
+    .nullable()
+    .optional(),
   work_hours: z.string().nullable().optional(),
   jd_text: z.string().nullable().optional(),
   jd_url: z.string().nullable().optional(),

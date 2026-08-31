@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Opportunity, InterviewRound } from '../types';
-import { ROUND_TYPE_META } from '../lib/status';
+import { ROUND_TYPE_META, WEEKEND_POLICY_META } from '../lib/status';
 import { formatDateTime } from '../lib/format';
 import StatusBadge from './StatusBadge';
 
@@ -34,10 +34,16 @@ export default function OpportunityCard({
             {opportunity.company_name} · {opportunity.position_name}
           </div>
           <div className="text-sm text-neutral-500 mt-1 truncate">
-            {[opportunity.salary_range, opportunity.city, opportunity.work_hours]
+            {[
+              opportunity.salary_range,
+              opportunity.city,
+              opportunity.work_hours,
+              opportunity.weekend_policy
+                ? WEEKEND_POLICY_META[opportunity.weekend_policy]
+                : null,
+            ]
               .filter(Boolean)
               .join(' · ')}
-            {opportunity.has_weekends_off ? ' · 双休' : ''}
           </div>
         </div>
         <StatusBadge status={opportunity.status} />

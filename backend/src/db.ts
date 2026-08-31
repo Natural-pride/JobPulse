@@ -25,7 +25,7 @@ export function initDb(dbPath: string): Database.Database {
       address TEXT,
       salary_range TEXT,
       benefits TEXT,
-      has_weekends_off INTEGER NOT NULL DEFAULT 0,
+      weekend_policy TEXT,
       work_hours TEXT,
       jd_text TEXT,
       jd_url TEXT,
@@ -62,6 +62,27 @@ export function initDb(dbPath: string): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_rounds_opportunity
       ON interview_rounds(opportunity_id);
   `);
+
+  // One-shot migration: has_weekends_off (INTEGER 0/1) → weekend_policy (TEXT enum).
+  // For dev DBs created under the old schema, copy data across then drop the old column.
+  // The old data has 0 (no) → NULL, 1 (yes) → 'double_off'.
+  const cols = instance
+    .prepare("PRAGMA table_info(opportunities)")
+    .all() as Array<{ name: string }>;
+  const hasOld = cols.some((c) => c.name === 'has_weekends_off');
+  const hasNew = cols.some((c) => c.name === 'weekend_policy');
+  if (hasOld && !hasNew) {
+    instance.exec(`ALTER TABLE opportunities ADD COLUMN weekend_policy TEXT`);
+    instance.exec(
+      `UPDATE opportunities SET weekend_policy = CASE has_weekends_off WHEN 1 THEN 'double_off' ELSE NULL END`
+    );
+    try {
+      instance.exec(`ALTER TABLE opportunities DROP COLUMN has_weekends_off`);
+    } catch {
+      // Older SQLite (<3.35) doesn't support DROP COLUMN. The legacy column
+      // becomes a harmless unused shadow column; the new column is the source of truth.
+    }
+  }
 
   return instance;
 }

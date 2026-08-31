@@ -39,11 +39,11 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
     const stmt = db.prepare(`
       INSERT INTO opportunities (
         company_name, position_name, city, address, salary_range, benefits,
-        has_weekends_off, work_hours, jd_text, jd_url, source, contact_info,
+        weekend_policy, work_hours, jd_text, jd_url, source, contact_info,
         status, final_salary, final_benefits, notes
       ) VALUES (
         @company_name, @position_name, @city, @address, @salary_range, @benefits,
-        @has_weekends_off, @work_hours, @jd_text, @jd_url, @source, @contact_info,
+        @weekend_policy, @work_hours, @jd_text, @jd_url, @source, @contact_info,
         @status, @final_salary, @final_benefits, @notes
       )
     `);
@@ -54,7 +54,7 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
       address: data.address ?? null,
       salary_range: data.salary_range ?? null,
       benefits: data.benefits ?? null,
-      has_weekends_off: data.has_weekends_off ? 1 : 0,
+      weekend_policy: data.weekend_policy ?? null,
       work_hours: data.work_hours ?? null,
       jd_text: data.jd_text ?? null,
       jd_url: data.jd_url ?? null,
@@ -93,12 +93,10 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
       salary_range:
         data.salary_range !== undefined ? data.salary_range : existing.salary_range,
       benefits: data.benefits !== undefined ? data.benefits : existing.benefits,
-      has_weekends_off:
-        data.has_weekends_off !== undefined
-          ? data.has_weekends_off
-            ? 1
-            : 0
-          : existing.has_weekends_off,
+      weekend_policy:
+        data.weekend_policy !== undefined
+          ? data.weekend_policy
+          : existing.weekend_policy,
       work_hours:
         data.work_hours !== undefined ? data.work_hours : existing.work_hours,
       jd_text: data.jd_text !== undefined ? data.jd_text : existing.jd_text,
@@ -119,7 +117,7 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
       `UPDATE opportunities SET
         company_name=@company_name, position_name=@position_name,
         city=@city, address=@address, salary_range=@salary_range,
-        benefits=@benefits, has_weekends_off=@has_weekends_off,
+        benefits=@benefits, weekend_policy=@weekend_policy,
         work_hours=@work_hours, jd_text=@jd_text, jd_url=@jd_url,
         source=@source, contact_info=@contact_info, status=@status,
         final_salary=@final_salary, final_benefits=@final_benefits,

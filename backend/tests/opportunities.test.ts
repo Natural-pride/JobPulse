@@ -85,4 +85,41 @@ describe('Opportunities API', () => {
     const get = await request(app).get(`/api/opportunities/${id}`);
     expect(get.status).toBe(404);
   });
+
+  it('weekend_policy roundtrips on create/get/update', async () => {
+    const create = await request(app)
+      .post('/api/opportunities')
+      .send({
+        company_name: 'Acme',
+        position_name: 'Backend',
+        weekend_policy: 'alternating',
+      });
+    expect(create.status).toBe(201);
+    expect(create.body.weekend_policy).toBe('alternating');
+
+    const get = await request(app).get(`/api/opportunities/${create.body.id}`);
+    expect(get.body.weekend_policy).toBe('alternating');
+
+    const update = await request(app)
+      .put(`/api/opportunities/${create.body.id}`)
+      .send({ weekend_policy: 'single_off' });
+    expect(update.status).toBe(200);
+    expect(update.body.weekend_policy).toBe('single_off');
+
+    const clear = await request(app)
+      .put(`/api/opportunities/${create.body.id}`)
+      .send({ weekend_policy: null });
+    expect(clear.body.weekend_policy).toBeNull();
+  });
+
+  it('rejects unknown weekend_policy values', async () => {
+    const res = await request(app)
+      .post('/api/opportunities')
+      .send({
+        company_name: 'Acme',
+        position_name: 'Backend',
+        weekend_policy: 'not_a_real_value',
+      });
+    expect(res.status).toBe(400);
+  });
 });

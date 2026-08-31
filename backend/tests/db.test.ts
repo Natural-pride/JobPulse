@@ -54,4 +54,41 @@ describe('initDb', () => {
       .all(oppId);
     expect(rounds).toHaveLength(0);
   });
+
+  it('migrates has_weekends_off (INTEGER 0/1) → weekend_policy (TEXT enum)', () => {
+    // Set up a DB with the old schema first.
+    const Database = require('better-sqlite3');
+    const legacy = new Database(TEST_DB);
+    legacy.exec(`
+      CREATE TABLE opportunities (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_name TEXT NOT NULL,
+        position_name TEXT NOT NULL,
+        has_weekends_off INTEGER NOT NULL DEFAULT 0
+      );
+      INSERT INTO opportunities (company_name, position_name, has_weekends_off) VALUES
+        ('Double',  'Eng', 1),
+        ('Single',  'Eng', 0);
+    `);
+    legacy.close();
+
+    // initDb should detect the legacy column and migrate.
+    const db = initDb(TEST_DB);
+    const rows = db
+      .prepare('SELECT company_name, weekend_policy FROM opportunities ORDER BY company_name')
+      .all() as Array<{ company_name: string; weekend_policy: string | null }>;
+    expect(rows).toEqual([
+      { company_name: 'Double', weekend_policy: 'double_off' },
+      { company_name: 'Single', weekend_policy: null },
+    ]);
+
+    // New rows should accept weekend_policy directly.
+    db.prepare(
+      'INSERT INTO opportunities (company_name, position_name, weekend_policy) VALUES (?, ?, ?)'
+    ).run('Alt', 'Eng', 'alternating');
+    const alt = db
+      .prepare('SELECT weekend_policy FROM opportunities WHERE company_name = ?')
+      .get('Alt') as { weekend_policy: string };
+    expect(alt.weekend_policy).toBe('alternating');
+  });
 });
