@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Opportunity, InterviewRound, OpportunityStatus } from '../types';
-import { STATUS_META } from '../lib/status';
+import { STATUS_META, WEEKEND_POLICY_META } from '../lib/status';
 import RoundCard from '../components/RoundCard';
 import RoundModal from '../components/RoundModal';
 
@@ -60,14 +60,29 @@ export default function OpportunityDetail() {
     await load();
   }
 
-  async function handleMarkOutcome(r: InterviewRound, outcome: 'passed' | 'failed') {
+  async function handleMarkOutcome(
+    r: InterviewRound,
+    outcome: 'passed' | 'failed' | 'cancelled'
+  ) {
     await api.rounds.update(r.id, { outcome });
-    if (outcome === 'failed') {
+    if (outcome === 'failed' && opp?.status === 'in_progress') {
       const ok = window.confirm('是否同时把机会标记为"未通过"？');
       if (ok && opp) {
         await api.opportunities.update(opp.id, { status: 'rejected' });
       }
-    } else {
+    } else if (outcome === 'cancelled' && opp?.status === 'in_progress') {
+      const remainingPending = rounds.filter(
+        (x) => x.id !== r.id && x.outcome === 'pending'
+      );
+      if (remainingPending.length === 0) {
+        const ok = window.confirm(
+          '本轮是最后一轮还未决定的面试，是否同时把机会标记为"我已撤回"？'
+        );
+        if (ok && opp) {
+          await api.opportunities.update(opp.id, { status: 'withdrawn' });
+        }
+      }
+    } else if (outcome === 'passed') {
       const ok = window.confirm(`是否添加第 ${nextRoundNumber} 轮（占位）？`);
       if (ok) {
         setEditingRound(null);
@@ -156,7 +171,10 @@ export default function OpportunityDetail() {
         <OverviewCard label="薪资" value={opp.salary_range || '—'} />
         <OverviewCard label="工时" value={opp.work_hours || '—'} />
         <OverviewCard label="福利" value={opp.benefits || '—'} />
-        <OverviewCard label="双休" value={opp.has_weekends_off ? '双休' : '—'} />
+        <OverviewCard
+          label="双休"
+          value={opp.weekend_policy ? WEEKEND_POLICY_META[opp.weekend_policy] : '—'}
+        />
       </div>
 
       {opp.jd_text && (
@@ -202,20 +220,36 @@ export default function OpportunityDetail() {
                 onDelete={() => handleDeleteRound(r)}
               />
               {r.outcome === 'pending' && (
-                <div className="flex gap-3 text-sm pl-1">
+                <div className="flex flex-wrap items-center gap-2 pl-1">
+                  <span className="text-xs text-neutral-500 mr-1">标记结果：</span>
                   <button
                     onClick={() => handleMarkOutcome(r, 'passed')}
-                    className="inline-flex items-center gap-1 text-green-700 hover:text-green-900 font-medium transition-colors"
+                    className="inline-flex items-center gap-1.5 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-700" />
-                    标记为已通过
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    通过
                   </button>
                   <button
                     onClick={() => handleMarkOutcome(r, 'failed')}
-                    className="inline-flex items-center gap-1 text-red-700 hover:text-red-900 font-medium transition-colors"
+                    className="inline-flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-700" />
-                    标记为未通过
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                    未通过
+                  </button>
+                  <button
+                    onClick={() => handleMarkOutcome(r, 'cancelled')}
+                    className="inline-flex items-center gap-1.5 bg-neutral-50 hover:bg-neutral-100 text-neutral-700 border border-neutral-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                    </svg>
+                    取消本轮
                   </button>
                 </div>
               )}
@@ -228,6 +262,20 @@ export default function OpportunityDetail() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSaved={() => load()}
+        onOutcomeChange={(_oldOutcome, newOutcome) => {
+          // Reuse the same prompt logic as the inline quick-action buttons.
+          if (newOutcome === 'cancelled' && opp?.status === 'in_progress') {
+            const remainingPending = rounds.filter((x) => x.outcome === 'pending');
+            if (remainingPending.length === 0) {
+              const ok = window.confirm(
+                '本轮是最后一轮还未决定的面试，是否同时把机会标记为"我已撤回"？'
+              );
+              if (ok && opp) {
+                void api.opportunities.update(opp.id, { status: 'withdrawn' });
+              }
+            }
+          }
+        }}
         opportunityId={opp.id}
         initial={editingRound}
         defaultRoundNumber={nextRoundNumber}

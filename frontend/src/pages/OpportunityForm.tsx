@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
-import type { Opportunity, OpportunityStatus, RoundFormat } from '../types';
+import type { Opportunity, OpportunityStatus, RoundFormat, WeekendPolicy } from '../types';
 import DateTimeInput from '../components/DateTimeInput';
 
-type FormState = Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'has_weekends_off'> & {
-  has_weekends_off: boolean;
+type FormState = Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'weekend_policy'> & {
+  weekend_policy: WeekendPolicy | '';
 };
 
 const empty: FormState = {
@@ -15,7 +15,7 @@ const empty: FormState = {
   address: '',
   salary_range: '',
   benefits: '',
-  has_weekends_off: false,
+  weekend_policy: '',
   work_hours: '',
   jd_text: '',
   jd_url: '',
@@ -38,6 +38,14 @@ const WORK_HOURS_PRESETS = [
   { value: '996', label: '996' },
   { value: '007', label: '007' },
   { value: '__custom__', label: '自定义...' },
+];
+
+const WEEKEND_POLICY_OPTIONS: Array<{ value: WeekendPolicy; label: string }> = [
+  { value: 'double_off', label: '双休' },
+  { value: 'single_off', label: '单休' },
+  { value: 'alternating', label: '大小周' },
+  { value: 'compensatory', label: '调休' },
+  { value: 'unknown', label: '不清楚' },
 ];
 
 const BENEFIT_TAGS = [
@@ -114,7 +122,7 @@ export default function OpportunityForm() {
         const opp = await api.opportunities.get(Number(id));
         setForm({
           ...opp,
-          has_weekends_off: Boolean(opp.has_weekends_off),
+          weekend_policy: opp.weekend_policy ?? '',
         });
         setLocation(opp.city ?? '');
         const w = parseWorkHours(opp.work_hours);
@@ -146,7 +154,7 @@ export default function OpportunityForm() {
       const trimmedLocation = location.trim();
       const payload = {
         ...form,
-        has_weekends_off: form.has_weekends_off ? 1 : 0,
+        weekend_policy: form.weekend_policy || null,
         city: trimmedLocation || null,
         address: null,
         salary_range: form.salary_range?.trim() || null,
@@ -194,25 +202,8 @@ export default function OpportunityForm() {
 
   return (
     <div className="max-w-3xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold">{isEdit ? '编辑面试机会' : '新建面试'}</h1>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="bg-white text-neutral-700 border border-neutral-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
-          >
-            取消
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-800 active:bg-indigo-900 disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-700 focus:ring-offset-2"
-          >
-            {saving ? '保存中…' : '保存'}
-          </button>
-        </div>
       </div>
 
       {error && <div className="text-red-600 mb-4">{error}</div>}
@@ -244,13 +235,16 @@ export default function OpportunityForm() {
               <select
                 value={firstInterviewFormat}
                 onChange={(e) => setFirstInterviewFormat(e.target.value as RoundFormat)}
-                className="w-full border border-slate-300 rounded px-3 py-1.5"
+                className="w-full border border-slate-300 rounded px-3 py-1.5 disabled:bg-slate-50 disabled:text-slate-400"
                 disabled={!firstInterviewAt}
               >
                 <option value="online_video">线上视频</option>
                 <option value="onsite">线下</option>
                 <option value="phone">电话</option>
               </select>
+              {!firstInterviewAt && (
+                <p className="mt-1 text-xs text-slate-400">先填写左侧的面试时间</p>
+              )}
             </Field>
           </div>
         )}
@@ -298,6 +292,44 @@ export default function OpportunityForm() {
             placeholder="例：10K-12K*13 / 25-40K / 面议"
           />
         </Field>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="上下班时间">
+            <select
+              value={workHoursPreset}
+              onChange={(e) => setWorkHoursPreset(e.target.value)}
+              className="w-full border border-slate-300 rounded px-3 py-1.5"
+            >
+              {WORK_HOURS_PRESETS.map((p) => (
+                <option key={p.value || 'empty'} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            {workHoursPreset === '__custom__' && (
+              <input
+                value={workHoursCustom}
+                onChange={(e) => setWorkHoursCustom(e.target.value)}
+                className="w-full mt-2 border border-slate-300 rounded px-3 py-1.5"
+                placeholder="自定义时间"
+              />
+            )}
+          </Field>
+          <Field label="双休">
+            <select
+              value={form.weekend_policy}
+              onChange={(e) => update('weekend_policy', e.target.value as WeekendPolicy | '')}
+              className="w-full border border-slate-300 rounded px-3 py-1.5"
+            >
+              <option value="">（不填）</option>
+              {WEEKEND_POLICY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
       </div>
 
       <div className="mt-6 border border-slate-200 rounded">
@@ -347,39 +379,6 @@ export default function OpportunityForm() {
                 placeholder="其他福利（用顿号或逗号分隔）"
               />
             </Field>
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="上下班时间">
-                <select
-                  value={workHoursPreset}
-                  onChange={(e) => setWorkHoursPreset(e.target.value)}
-                  className="w-full border border-slate-300 rounded px-3 py-1.5"
-                >
-                  {WORK_HOURS_PRESETS.map((p) => (
-                    <option key={p.value || 'empty'} value={p.value}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-                {workHoursPreset === '__custom__' && (
-                  <input
-                    value={workHoursCustom}
-                    onChange={(e) => setWorkHoursCustom(e.target.value)}
-                    className="w-full mt-2 border border-slate-300 rounded px-3 py-1.5"
-                    placeholder="自定义时间"
-                  />
-                )}
-              </Field>
-              <Field label="">
-                <label className="flex items-center gap-2 pt-6">
-                  <input
-                    type="checkbox"
-                    checked={form.has_weekends_off}
-                    onChange={(e) => update('has_weekends_off', e.target.checked)}
-                  />
-                  <span>是否双休</span>
-                </label>
-              </Field>
-            </div>
             <Field label="JD 链接">
               <input
                 value={form.jd_url ?? ''}
@@ -441,6 +440,24 @@ export default function OpportunityForm() {
             )}
           </div>
         )}
+      </div>
+
+      <div className="mt-8 pt-6 border-t border-neutral-200 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="bg-white text-neutral-700 border border-neutral-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
+        >
+          取消
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-indigo-800 active:bg-indigo-900 disabled:opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-700 focus:ring-offset-2"
+        >
+          {saving ? '保存中…' : isEdit ? '保存修改' : '保存'}
+        </button>
       </div>
     </div>
   );

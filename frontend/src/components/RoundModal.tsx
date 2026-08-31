@@ -55,6 +55,7 @@ export default function RoundModal({
   open,
   onClose,
   onSaved,
+  onOutcomeChange,
   opportunityId,
   initial,
   defaultRoundNumber,
@@ -62,6 +63,7 @@ export default function RoundModal({
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
+  onOutcomeChange?: (oldOutcome: RoundOutcome, newOutcome: RoundOutcome) => void;
   opportunityId: number;
   initial: InterviewRound | null;
   defaultRoundNumber?: number;
@@ -110,9 +112,16 @@ export default function RoundModal({
         notes: form.notes || null,
       };
       if (initial) {
+        const previousOutcome = initial.outcome;
         await api.rounds.update(initial.id, payload);
+        if (previousOutcome !== form.outcome) {
+          onOutcomeChange?.(previousOutcome, form.outcome);
+        }
       } else {
         await api.rounds.create(opportunityId, payload);
+        if (form.outcome !== 'pending') {
+          onOutcomeChange?.('pending', form.outcome);
+        }
       }
       onSaved();
       onClose();
