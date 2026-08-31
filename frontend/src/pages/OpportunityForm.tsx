@@ -7,6 +7,7 @@ import CityPicker, { type CityValue } from '../components/CityPicker';
 import SalaryInput from '../components/SalaryInput';
 import { getCities, findProvinceForCity } from '../lib/cityData';
 import useDocumentTitle from '../hooks/useDocumentTitle';
+import { useCustomSources } from '../hooks/useCustomSources';
 
 type FormState = Omit<
   Opportunity,
@@ -165,6 +166,11 @@ export default function OpportunityForm() {
   const [firstInterviewAt, setFirstInterviewAt] = useState('');
   const [firstInterviewFormat, setFirstInterviewFormat] = useState<RoundFormat>('online_video');
   const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  // Custom "来源" suggestions: remembered across sessions via localStorage.
+  const { custom: customSources, add: addCustomSource, remove: removeCustomSource } =
+    useCustomSources();
+  const [customSourceInput, setCustomSourceInput] = useState('');
 
   // Structured-field state (work_hours uses dropdown; benefits multi-select)
   const [workHoursPreset, setWorkHoursPreset] = useState('');
@@ -339,27 +345,97 @@ export default function OpportunityForm() {
             </Field>
             <div className="md:col-span-2">
               <Field label="来源">
-                <div className="flex flex-wrap gap-2">
-                  {SOURCE_SUGGESTIONS.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => update('source', s)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                        form.source === s
-                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                          : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                  <input
-                    value={SOURCE_SUGGESTIONS.includes(form.source ?? '') ? '' : form.source ?? ''}
-                    onChange={(e) => update('source', e.target.value)}
-                    className="flex-1 min-w-[120px] rounded-full border border-slate-200 px-3 py-1 text-xs outline-none focus:border-slate-400"
-                    placeholder="其他来源…"
-                  />
+                <div className="space-y-2">
+                  {/* Row 1: built-in suggestions */}
+                  <div className="flex flex-wrap gap-2">
+                    {SOURCE_SUGGESTIONS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => update('source', s)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                          form.source === s
+                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                            : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                    <input
+                      value={
+                        SOURCE_SUGGESTIONS.includes(form.source ?? '') &&
+                        !customSourceInput
+                          ? ''
+                          : customSourceInput || form.source || ''
+                      }
+                      onChange={(e) => {
+                        setCustomSourceInput(e.target.value);
+                        update('source', e.target.value);
+                      }}
+                      onBlur={() => {
+                        const v = customSourceInput.trim();
+                        if (v && !SOURCE_SUGGESTIONS.includes(v)) {
+                          addCustomSource(v);
+                        }
+                        setCustomSourceInput('');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const v = customSourceInput.trim();
+                          if (v) {
+                            if (!SOURCE_SUGGESTIONS.includes(v)) addCustomSource(v);
+                            update('source', v);
+                            setCustomSourceInput('');
+                          }
+                        }
+                      }}
+                      className="flex-1 min-w-[120px] rounded-full border border-slate-200 px-3 py-1 text-xs outline-none focus:border-slate-400"
+                      placeholder="其他来源…"
+                    />
+                  </div>
+                  {/* Row 2: remembered custom sources (localStorage) */}
+                  {customSources.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pl-1">
+                      <span className="text-[11px] text-slate-400 mr-0.5">最近用过：</span>
+                      {customSources.map((s) => (
+                        <span
+                          key={s}
+                          className={`inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full text-[11px] border ${
+                            form.source === s
+                              ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                              : 'border-slate-200 text-slate-600 bg-white'
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => update('source', s)}
+                            className="hover:text-indigo-700 transition-colors"
+                          >
+                            {s}
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`移除 ${s}`}
+                            onClick={() => removeCustomSource(s)}
+                            className="w-4 h-4 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center transition-colors"
+                          >
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden>
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* Save reminder: when user types a new value, persist it. */}
+                  {customSourceInput && !SOURCE_SUGGESTIONS.includes(customSourceInput) && (
+                    <p className="text-[11px] text-slate-400 pl-1">
+                      按 Enter 或失焦后自动保存到"最近用过"
+                    </p>
+                  )}
                 </div>
               </Field>
             </div>
