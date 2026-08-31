@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Opportunity, OpportunityStatus, RoundFormat, WeekendPolicy } from '../types';
 import DateTimeInput from '../components/DateTimeInput';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 type FormState = Omit<Opportunity, 'id' | 'created_at' | 'updated_at' | 'weekend_policy'> & {
   weekend_policy: WeekendPolicy | '';
@@ -102,6 +103,7 @@ export default function OpportunityForm() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [error, setError] = useState<string | null>(null);
+  useDocumentTitle(isEdit ? (form.company_name ? `编辑 · ${form.company_name}` : '编辑面试') : '新建面试');
 
   // Quick-add fields (only used when creating)
   const [location, setLocation] = useState('');

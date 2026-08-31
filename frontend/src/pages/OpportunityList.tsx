@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { Opportunity, OpportunityStatus, InterviewRound } from '../types';
 import OpportunityCard from '../components/OpportunityCard';
 import { STATUS_META } from '../lib/status';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 type FilterValue = OpportunityStatus | 'all';
 
@@ -16,6 +17,7 @@ const STATUS_DOT: Record<OpportunityStatus, string> = {
 };
 
 export default function OpportunityList() {
+  useDocumentTitle('面试机会');
   const [data, setData] = useState<{ opp: Opportunity; rounds: InterviewRound[] }[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterValue>('all');

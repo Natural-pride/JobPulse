@@ -5,6 +5,7 @@ import type { Opportunity, InterviewRound } from '../types';
 import StatCard from '../components/StatCard';
 import { ROUND_TYPE_META, FORMAT_META } from '../lib/status';
 import { formatDateTime } from '../lib/format';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 interface DashboardData {
   opportunity: Opportunity;
@@ -19,6 +20,7 @@ const OUTCOME_DOT: Record<string, string> = {
 };
 
 export default function Dashboard() {
+  useDocumentTitle('概览');
   const [data, setData] = useState<DashboardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

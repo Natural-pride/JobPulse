@@ -5,6 +5,7 @@ import type { Opportunity, InterviewRound, OpportunityStatus } from '../types';
 import { STATUS_META, WEEKEND_POLICY_META } from '../lib/status';
 import RoundCard from '../components/RoundCard';
 import RoundModal from '../components/RoundModal';
+import useDocumentTitle from '../hooks/useDocumentTitle';
 
 export default function OpportunityDetail() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function OpportunityDetail() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRound, setEditingRound] = useState<InterviewRound | null>(null);
+  useDocumentTitle(opp ? `${opp.company_name} · ${opp.position_name}` : '面试详情');
 
   async function load() {
     if (!id) return;
