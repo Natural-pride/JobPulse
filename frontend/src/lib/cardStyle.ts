@@ -37,13 +37,13 @@ export const SALARY_TIER_CLASSES: Record<
   unknown: { bg: 'bg-neutral-50', text: 'text-neutral-500', dot: 'bg-neutral-300' },
 };
 
-/** Weekend policy chip colors. Double-off is the default (no chip needed),
- *  everything else is a soft amber warning so it stands out. */
+/** Weekend policy chip colors. Double-off is the "good" baseline (emerald),
+ *  other policies are amber warnings so they stand out. */
 export const WEEKEND_CHIP: Record<
   string,
   { label: string; cls: string } | null
 > = {
-  double_off: null, // default — no chip
+  double_off: { label: '双休', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   single_off: { label: '单休', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
   alternating: { label: '大小周', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
   compensatory: { label: '调休', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
