@@ -25,7 +25,7 @@ const empty: FormState = {
   work_hours: '',
   jd_text: '',
   jd_url: '',
-  source: '',
+  source: 'Boss直聘',
   contact_info: '',
   status: 'in_progress',
   final_salary: '',
@@ -52,6 +52,19 @@ const WEEKEND_POLICY_OPTIONS: Array<{ value: WeekendPolicy; label: string }> = [
   { value: 'alternating', label: '大小周' },
   { value: 'compensatory', label: '调休' },
   { value: 'unknown', label: '不清楚' },
+];
+
+const SOURCE_SUGGESTIONS = [
+  'Boss直聘',
+  '拉勾',
+  '内推',
+  '猎头',
+  '公司官网',
+  'V2EX',
+  'LinkedIn',
+  '脉脉',
+  '校友群',
+  '其他',
 ];
 
 const BENEFIT_TAGS = [
@@ -327,19 +340,18 @@ export default function OpportunityForm() {
             />
           </Field>
           <Field label="来源">
-            <select
+            <input
+              list="source-suggestions"
               value={form.source ?? ''}
               onChange={(e) => update('source', e.target.value)}
               className="w-full border border-slate-300 rounded px-3 py-1.5"
-            >
-              <option value="">（不填）</option>
-              <option value="Boss直聘">Boss直聘</option>
-              <option value="拉勾">拉勾</option>
-              <option value="内推">内推</option>
-              <option value="猎头">猎头</option>
-              <option value="公司官网">公司官网</option>
-              <option value="其他">其他</option>
-            </select>
+              placeholder="选一个或自己输入"
+            />
+            <datalist id="source-suggestions">
+              {SOURCE_SUGGESTIONS.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
           </Field>
         </div>
 
