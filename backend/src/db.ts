@@ -1,0 +1,103 @@
+import Database from 'better-sqlite3';
+import path from 'node:path';
+import fs from 'node:fs';
+
+const openInstances = new Set<Database.Database>();
+
+let db: Database.Database | null = null;
+
+export function initDb(dbPath: string): Database.Database {
+  const dir = path.dirname(dbPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  const instance = new Database(dbPath);
+  openInstances.add(instance);
+  instance.pragma('journal_mode = WAL');
+  instance.pragma('foreign_keys = ON');
+
+  instance.exec(`
+    CREATE TABLE IF NOT EXISTS opportunities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_name TEXT NOT NULL,
+      position_name TEXT NOT NULL,
+      city TEXT,
+      address TEXT,
+      salary_range TEXT,
+      benefits TEXT,
+      has_weekends_off INTEGER NOT NULL DEFAULT 0,
+      work_hours TEXT,
+      jd_text TEXT,
+      jd_url TEXT,
+      source TEXT,
+      contact_info TEXT,
+      status TEXT NOT NULL DEFAULT 'in_progress',
+      final_salary TEXT,
+      final_benefits TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS interview_rounds (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      opportunity_id INTEGER NOT NULL,
+      round_number INTEGER NOT NULL,
+      round_type TEXT NOT NULL,
+      format TEXT NOT NULL,
+      location TEXT,
+      scheduled_at TEXT NOT NULL,
+      actual_at TEXT,
+      duration_minutes INTEGER,
+      questions TEXT,
+      my_performance TEXT,
+      outcome TEXT NOT NULL DEFAULT 'pending',
+      next_round_date TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (opportunity_id) REFERENCES opportunities(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_rounds_opportunity
+      ON interview_rounds(opportunity_id);
+  `);
+
+  return instance;
+}
+
+export function getDb(): Database.Database {
+  if (!db) {
+    const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'data', 'jobpulse.db');
+    db = initDb(dbPath);
+  }
+  return db;
+}
+
+export function setDbForTesting(instance: Database.Database): void {
+  db = instance;
+  openInstances.add(instance);
+}
+
+// Register a vitest afterEach hook to close any tracked database connections
+// between tests. This prevents file locks from carrying over between tests on
+// platforms (like Windows) where an open file cannot be unlinked.
+//
+// We use a dynamic import so this module can also be loaded in production
+// (where vitest is not installed as a dependency). The dynamic import is
+// awaited at module top level so the hook is registered before any test runs.
+try {
+  const { afterEach } = await import('vitest');
+  afterEach(() => {
+    for (const inst of openInstances) {
+      try {
+        inst.close();
+      } catch {
+        // already closed or other error; ignore
+      }
+    }
+    openInstances.clear();
+  });
+} catch {
+  // vitest not available (e.g., production); skip hook registration
+}
