@@ -119,6 +119,43 @@ export default function OpportunityImport() {
     return () => URL.revokeObjectURL(preview);
   }, [preview]);
 
+  // Listen for paste events anywhere on the page so users can Ctrl+V a
+  // screenshot directly from the clipboard (Windows Snip / macOS Screenshot /
+  // QQ / WeChat etc.). Ignore pastes that don't contain an image.
+  useEffect(() => {
+    function onPaste(e: ClipboardEvent) {
+      // Don't hijack pastes inside form fields (those are for text input).
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const blob = item.getAsFile();
+          if (!blob) return;
+          const ext = item.type.split('/')[1] || 'png';
+          const file = new File([blob], `粘贴截图-${Date.now()}.${ext}`, {
+            type: item.type,
+          });
+          pickFile(file);
+          return;
+        }
+      }
+    }
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+    // pickFile is stable (closure over setState setters), safe to omit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function pickFile(f: File | null) {
     setFile(f);
     setParseError(null);
@@ -276,7 +313,8 @@ export default function OpportunityImport() {
                     <polyline points="17 8 12 3 7 8" />
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
-                  <p className="text-sm">拖拽图片到此处，或点击选择文件</p>
+                  <p className="text-sm">拖拽图片到此处、点击选择文件，或直接 <kbd className="px-1.5 py-0.5 mx-0.5 text-[11px] font-mono bg-slate-100 border border-slate-200 rounded text-slate-700">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 text-[11px] font-mono bg-slate-100 border border-slate-200 rounded text-slate-700">V</kbd> 从剪贴板粘贴</p>
+                  <p className="text-[11px] text-slate-400 mt-1.5">支持 Windows 截图工具、macOS 截图、QQ / 微信等任意来源</p>
                 </div>
               )}
               <input
