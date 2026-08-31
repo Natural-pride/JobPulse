@@ -24,8 +24,8 @@ export default function OpportunityList() {
   useDocumentTitle('面试机会');
   const [items, setItems] = useState<{ opp: Opportunity; rounds: InterviewRound[] }[]>([]);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [loadingPage, setLoadingPage] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +37,28 @@ export default function OpportunityList() {
   filterRef.current = filter;
   searchRef.current = search;
 
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  /**
+   * Build the visible page-number list with ellipsis for many pages.
+   * Always shows first, last, current ±1, and uses '…' for skipped ranges.
+   */
+  const pageNumbers: (number | '…')[] = (() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const set = new Set<number>([1, totalPages, page, page - 1, page + 1]);
+    const sorted = [...set].filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+    const out: (number | '…')[] = [];
+    let prev = 0;
+    for (const p of sorted) {
+      if (p - prev > 1) out.push('…');
+      out.push(p);
+      prev = p;
+    }
+    return out;
+  })();
+
   const loadPage = useCallback(
-    async (pageToLoad: number, mode: 'replace' | 'append') => {
+    async (pageToLoad: number) => {
       setLoadingPage(true);
       setError(null);
       try {
@@ -54,12 +74,10 @@ export default function OpportunityList() {
             rounds: await api.rounds.list(opp.id),
           }))
         );
-        setItems((prev) =>
-          mode === 'append' ? [...prev, ...withRounds] : withRounds
-        );
-        setHasMore(result.hasMore);
+        setItems(withRounds);
         setTotal(result.total);
         setPage(result.page);
+        setPageSize(result.pageSize);
       } catch (e) {
         setError(e instanceof Error ? e.message : '加载失败');
       } finally {
@@ -72,12 +90,12 @@ export default function OpportunityList() {
 
   // Initial load
   useEffect(() => {
-    loadPage(1, 'replace');
+    loadPage(1);
   }, [loadPage]);
 
   // Reset on filter/search change
   useEffect(() => {
-    loadPage(1, 'replace');
+    loadPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, search]);
 
@@ -94,7 +112,7 @@ export default function OpportunityList() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">面试机会</h1>
           <p className="text-xs text-neutral-500 mt-1 tabular-nums">
-            共 {total} 条 · 当前第 {page} 页
+            共 {total} 条 · 按最近一次面试时间排序
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -180,34 +198,68 @@ export default function OpportunityList() {
               <OpportunityCard key={opp.id} opportunity={opp} rounds={rounds} />
             ))}
           </div>
-          {hasMore && (
-            <div className="mt-6 flex justify-center">
+          {totalPages > 1 && (
+            <nav
+              aria-label="分页"
+              className="mt-6 flex items-center justify-center gap-2"
+            >
               <button
                 type="button"
-                onClick={() => loadPage(page + 1, 'append')}
-                disabled={loadingPage}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                onClick={() => loadPage(page - 1)}
+                disabled={page <= 1 || loadingPage}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 hover:border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                {loadingPage ? (
-                  <>
-                    <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                    <span>加载中…</span>
-                  </>
-                ) : (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                    <span>加载更多</span>
-                  </>
-                )}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                上一页
               </button>
-            </div>
+              {pageNumbers.map((p, idx) =>
+                p === '…' ? (
+                  <span
+                    key={`gap-${idx}`}
+                    className="px-1 text-neutral-400 text-sm select-none"
+                    aria-hidden
+                  >
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => loadPage(p)}
+                    disabled={loadingPage}
+                    aria-current={p === page ? 'page' : undefined}
+                    className={`min-w-[2.25rem] px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                      p === page
+                        ? 'bg-indigo-700 text-white'
+                        : 'bg-white text-neutral-700 border border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300'
+                    } disabled:cursor-not-allowed`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+              <button
+                type="button"
+                onClick={() => loadPage(page + 1)}
+                disabled={page >= totalPages || loadingPage}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-neutral-700 bg-white border border-neutral-200 rounded-lg hover:bg-neutral-50 hover:border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                下一页
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+              <span className="ml-3 text-xs text-neutral-500 tabular-nums">
+                第 {page} / {totalPages} 页
+              </span>
+            </nav>
           )}
-          {!hasMore && items.length > 0 && (
-            <div className="mt-6 text-center text-xs text-neutral-400">— 已显示全部 {total} 条 —</div>
+          {totalPages <= 1 && items.length > 0 && (
+            <div className="mt-6 text-center text-xs text-neutral-400">
+              — 已显示全部 {total} 条 —
+            </div>
           )}
         </>
       )}

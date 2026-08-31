@@ -32,6 +32,19 @@ const listQuerySchema = z.object({
   search: z.string().trim().min(1).max(100).optional(),
 });
 
+/**
+ * Sort opportunities by their most recent interview time, newest first.
+ * "Interview time" = the latest of (actual_at, scheduled_at) across all rounds
+ * for that opportunity. Falls back to created_at when there are no rounds,
+ * and uses created_at as a stable tiebreak.
+ */
+const INTERVIEW_TIME_ORDER_SQL = `ORDER BY COALESCE(
+  (SELECT MAX(COALESCE(actual_at, scheduled_at))
+     FROM interview_rounds
+     WHERE opportunity_id = opportunities.id),
+  created_at
+) DESC, created_at DESC`;
+
 export function createOpportunitiesRouter(db: Database.Database): Router {
   const router = Router();
 
@@ -49,7 +62,7 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
 
     if (!wantsPaging) {
       const rows = db
-        .prepare('SELECT * FROM opportunities ORDER BY created_at DESC')
+        .prepare(`SELECT * FROM opportunities ${INTERVIEW_TIME_ORDER_SQL}`)
         .all() as Opportunity[];
       res.json(rows);
       return;
@@ -81,7 +94,7 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
       .get(...params) as { n: number };
     const rows = db
       .prepare(
-        `SELECT * FROM opportunities ${whereSql} ORDER BY created_at DESC LIMIT ? OFFSET ?`
+        `SELECT * FROM opportunities ${whereSql} ${INTERVIEW_TIME_ORDER_SQL} LIMIT ? OFFSET ?`
       )
       .all(...params, pageSize, offset) as Opportunity[];
 

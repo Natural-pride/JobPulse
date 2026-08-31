@@ -234,3 +234,74 @@ describe('Opportunities pagination', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('Opportunities sort by interview time', () => {
+  let db: Database.Database;
+  let app: ReturnType<typeof createApp>;
+
+  beforeEach(() => {
+    if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
+    db = initDb(TEST_DB);
+    app = createApp(db);
+    // Seed 3 opportunities, each created on the same day, but with rounds
+    // at different times. Sort should be: most-recent interview first.
+    const insertOpp = db.prepare(
+      'INSERT INTO opportunities (company_name, position_name, status, created_at) VALUES (?, ?, ?, ?)'
+    );
+    const insertRound = db.prepare(
+      `INSERT INTO interview_rounds
+         (opportunity_id, round_number, round_type, format, scheduled_at, actual_at, outcome)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    );
+    const CREATED = '2026-08-01 10:00:00';
+
+    // A: created first, no rounds → should sort by created_at (last)
+    const a = insertOpp.run('Alpha', 'A', 'in_progress', CREATED).lastInsertRowid as number;
+    // B: created second, has a round on 08-15 (older)
+    const b = insertOpp.run('Bravo', 'B', 'in_progress', CREATED).lastInsertRowid as number;
+    insertRound.run(b, 1, 'technical', 'online', '2026-08-15 10:00:00', '2026-08-15 11:00:00', 'passed');
+    // C: created third, has a round on 08-25 (newest) — should be first
+    const c = insertOpp.run('Charlie', 'C', 'in_progress', CREATED).lastInsertRowid as number;
+    insertRound.run(c, 1, 'technical', 'online', '2026-08-25 10:00:00', '2026-08-25 11:00:00', 'passed');
+
+    // (a is unused but kept for clarity)
+    void a;
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it('back-compat: returns most-recent-interview first', async () => {
+    const res = await request(app).get('/api/opportunities');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    const names = (res.body as { company_name: string }[]).map((o) => o.company_name);
+    expect(names[0]).toBe('Charlie');
+    expect(names[1]).toBe('Bravo');
+    expect(names[2]).toBe('Alpha');
+  });
+
+  it('paged: also sorts by most-recent-interview', async () => {
+    const res = await request(app).get('/api/opportunities?page=1&pageSize=10');
+    const names = (res.body.items as { company_name: string }[]).map((o) => o.company_name);
+    expect(names[0]).toBe('Charlie');
+    expect(names[1]).toBe('Bravo');
+    expect(names[2]).toBe('Alpha');
+  });
+
+  it('falls back to scheduled_at when no actual_at', async () => {
+    // Add a round to Alpha with only scheduled_at, dated 09-01.
+    // Alpha should jump to the top.
+    db.prepare(
+      `INSERT INTO interview_rounds
+         (opportunity_id, round_number, round_type, format, scheduled_at, actual_at, outcome)
+       VALUES ((SELECT id FROM opportunities WHERE company_name = 'Alpha'),
+               1, 'technical', 'online', '2026-09-01 10:00:00', NULL, 'pending')`
+    ).run();
+    const res = await request(app).get('/api/opportunities');
+    const names = (res.body as { company_name: string }[]).map((o) => o.company_name);
+    expect(names[0]).toBe('Alpha');
+    expect(names[1]).toBe('Charlie');
+  });
+});
