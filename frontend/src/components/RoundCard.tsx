@@ -21,7 +21,10 @@ export default function RoundCard({
   const outcomeMeta = OUTCOME_META[round.outcome];
   const dotColor = OUTCOME_DOT[round.outcome];
   return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-xs hover:border-neutral-300 hover:shadow-sm transition">
+    <div
+      id={`round-${round.id}`}
+      className="bg-white border border-neutral-200 rounded-xl p-5 shadow-xs hover:border-neutral-300 hover:shadow-sm transition scroll-mt-32"
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="font-medium text-neutral-900">

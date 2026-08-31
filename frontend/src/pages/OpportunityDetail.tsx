@@ -5,6 +5,8 @@ import type { Opportunity, InterviewRound, OpportunityStatus } from '../types';
 import { STATUS_META, WEEKEND_POLICY_META } from '../lib/status';
 import RoundCard from '../components/RoundCard';
 import RoundModal from '../components/RoundModal';
+import OpportunityTimeline from '../components/OpportunityTimeline';
+import { buildTimeline } from '../lib/timelineUtils';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
 export default function OpportunityDetail() {
@@ -172,6 +174,17 @@ export default function OpportunityDetail() {
           </Link>
         </div>
       )}
+
+      {/* Timeline */}
+      <div className="bg-white border border-neutral-200 rounded-xl p-5 shadow-xs mb-8">
+        <div className="flex items-baseline justify-between mb-4">
+          <h2 className="text-sm font-medium text-neutral-900">进度时间线</h2>
+          <span className="text-xs text-neutral-500 tabular-nums">
+            {rounds.length} 轮
+          </span>
+        </div>
+        <OpportunityTimeline events={buildTimeline(opp, rounds)} />
+      </div>
 
       <div className="grid grid-cols-4 gap-3 mb-8">
         <OverviewCard label="薪资" value={opp.salary_range || '—'} />
