@@ -1,6 +1,6 @@
 # JobPulse
 
-记录求职全过程的小工具。从在 BOSS 上发出一条消息到入职那天的 offer 对比，都在一个本地 SQLite 文件里。
+JobPulse is a local-first job application tracker. Log applications, manage interview rounds, paste screenshots to auto-fill fields. Single SQLite file, single user, no cloud.
 
 <!-- 放一张仪表盘截图 -->
 
