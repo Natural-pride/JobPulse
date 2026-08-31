@@ -42,7 +42,7 @@ export default function OpportunityCard({
             in_progress: '进行中',
             offered: '已 Offer',
             accepted: '已接受',
-            rejected: '已拒绝',
+            rejected: '未通过',
             withdrawn: '已撤回',
           }[opportunity.status]}
         </span>

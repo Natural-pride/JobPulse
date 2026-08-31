@@ -7,7 +7,7 @@ export const STATUS_META: Record<
   in_progress: { label: '进行中', color: 'text-blue-700', bgColor: 'bg-blue-100' },
   offered: { label: '已 Offer', color: 'text-green-700', bgColor: 'bg-green-100' },
   accepted: { label: '已接受', color: 'text-emerald-700', bgColor: 'bg-emerald-100' },
-  rejected: { label: '已拒绝', color: 'text-red-700', bgColor: 'bg-red-100' },
+  rejected: { label: '未通过', color: 'text-red-700', bgColor: 'bg-red-100' },
   withdrawn: { label: '我已撤回', color: 'text-slate-600', bgColor: 'bg-slate-100' },
 };
 
