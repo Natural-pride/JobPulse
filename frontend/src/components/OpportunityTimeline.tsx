@@ -112,7 +112,7 @@ export default function OpportunityTimeline({
       {events.map((e) => {
         const Icon = EVENT_ICON[e.type];
         const d = parseISO(e.date);
-        const leftLabel = isValid(d) ? formatTimelineLabel(d, now) : e.dateLabel;
+        const leftLabel = isValid(d) ? formatTimelineLabel(d) : e.dateLabel;
         return (
           <li
             key={e.id}

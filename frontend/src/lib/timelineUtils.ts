@@ -191,12 +191,7 @@ export function buildTimeline(
   return events;
 }
 
-/** Compact relative date label for the left rail of the timeline. */
-export function formatTimelineLabel(d: Date, now: Date = new Date()): string {
-  const days = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-  const time = format(d, 'HH:mm');
-  if (days === 0) return `今天 ${time}`;
-  if (days === 1) return `昨天 ${time}`;
-  if (days >= 2 && days < 7) return `${days} 天前 ${time}`;
+/** Compact date label for the left rail of the timeline. */
+export function formatTimelineLabel(d: Date): string {
   return format(d, 'MM-dd HH:mm', { locale: zhCN });
 }
