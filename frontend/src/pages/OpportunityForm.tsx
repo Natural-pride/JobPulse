@@ -25,7 +25,7 @@ const empty: FormState = {
   work_hours: '',
   jd_text: '',
   jd_url: '',
-  source: 'Boss直聘',
+  source: 'BOSS',
   contact_info: '',
   status: 'in_progress',
   final_salary: '',
@@ -55,15 +55,12 @@ const WEEKEND_POLICY_OPTIONS: Array<{ value: WeekendPolicy; label: string }> = [
 ];
 
 const SOURCE_SUGGESTIONS = [
-  'Boss直聘',
-  '拉勾',
-  '内推',
-  '猎头',
-  '公司官网',
-  'V2EX',
-  'LinkedIn',
+  'BOSS',
+  '智联招聘',
+  '前程无忧',
+  '猎聘',
+  '58同城',
   '脉脉',
-  '校友群',
   '其他',
 ];
 
