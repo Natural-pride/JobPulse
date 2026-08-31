@@ -587,6 +587,8 @@ export default function OpportunityForm() {
                     <option value="accepted">已接受</option>
                     <option value="rejected">未通过</option>
                     <option value="withdrawn">我已撤回</option>
+                    <option value="declined">已拒 offer</option>
+                    <option value="accepted_then_left">入职后离职</option>
                   </select>
                 </Field>
               )}

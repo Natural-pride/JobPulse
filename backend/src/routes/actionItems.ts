@@ -62,9 +62,16 @@ export function computeActionItems(
   const items: ActionItem[] = [];
 
   for (const opp of opportunities) {
-    // Only check active opportunities. Final states (rejected, withdrawn) are
-    // intentional closures — surfacing them as "needs attention" would be noise.
-    if (opp.status === 'rejected' || opp.status === 'withdrawn') continue;
+    // Only check active opportunities. Final states are intentional closures
+    // — surfacing them as "needs attention" would be noise.
+    if (
+      opp.status === 'rejected' ||
+      opp.status === 'withdrawn' ||
+      opp.status === 'declined' ||
+      opp.status === 'accepted_then_left'
+    ) {
+      continue;
+    }
 
     const rounds = roundsByOpp.get(opp.id) ?? [];
     const sortedRounds = [...rounds].sort((a, b) => a.round_number - b.round_number);

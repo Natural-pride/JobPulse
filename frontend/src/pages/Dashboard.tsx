@@ -74,7 +74,16 @@ export default function Dashboard() {
     (d) =>
       d.opportunity.status === 'offered' || d.opportunity.status === 'accepted'
   ).length;
-  const notPassed = data.filter((d) => d.opportunity.status === 'rejected').length;
+  // All "终态" that mean "did not result in a job": rejected / declined / withdrawn
+  // / accepted_then_left. Keep them as a single bucket on the 4-card stats; the
+  // filter chips on the list page break them out individually.
+  const notPassed = data.filter(
+    (d) =>
+      d.opportunity.status === 'rejected' ||
+      d.opportunity.status === 'declined' ||
+      d.opportunity.status === 'withdrawn' ||
+      d.opportunity.status === 'accepted_then_left'
+  ).length;
 
   const opps = data.map((d) => d.opportunity);
   const roundsByOpp = new Map<number, InterviewRound[]>(

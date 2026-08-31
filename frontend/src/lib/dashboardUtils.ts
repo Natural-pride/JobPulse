@@ -45,7 +45,11 @@ export function buildFunnel(
     (roundsByOpp.get(o.id) ?? []).some((r) => r.outcome === 'passed')
   ).length;
   const offered = opps.filter(
-    (o) => o.status === 'offered' || o.status === 'accepted'
+    (o) =>
+      o.status === 'offered' ||
+      o.status === 'accepted' ||
+      o.status === 'declined' ||
+      o.status === 'accepted_then_left'
   ).length;
 
   const counts = [total, interviewed, passedFirst, offered];

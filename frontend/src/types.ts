@@ -3,7 +3,9 @@ export type OpportunityStatus =
   | 'offered'
   | 'accepted'
   | 'rejected'
-  | 'withdrawn';
+  | 'withdrawn'
+  | 'declined'
+  | 'accepted_then_left';
 
 export type RoundType =
   | 'hr_screen'

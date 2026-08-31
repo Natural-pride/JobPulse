@@ -9,6 +9,8 @@ export const STATUS_META: Record<
   accepted: { label: '已接受', color: 'text-emerald-700', bgColor: 'bg-emerald-100' },
   rejected: { label: '未通过', color: 'text-red-700', bgColor: 'bg-red-100' },
   withdrawn: { label: '我已撤回', color: 'text-slate-600', bgColor: 'bg-slate-100' },
+  declined: { label: '已拒 offer', color: 'text-slate-600', bgColor: 'bg-slate-100' },
+  accepted_then_left: { label: '入职后离职', color: 'text-amber-700', bgColor: 'bg-amber-100' },
 };
 
 export const ROUND_TYPE_META: Record<RoundType, string> = {

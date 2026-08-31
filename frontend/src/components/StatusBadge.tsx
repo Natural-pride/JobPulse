@@ -7,6 +7,8 @@ const STATUS_DOT_COLOR: Record<OpportunityStatus, string> = {
   accepted: 'bg-teal-700',
   rejected: 'bg-red-700',
   withdrawn: 'bg-neutral-600',
+  declined: 'bg-slate-500',
+  accepted_then_left: 'bg-amber-500',
 };
 
 export default function StatusBadge({ status }: { status: OpportunityStatus }) {

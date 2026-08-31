@@ -18,7 +18,15 @@ export const opportunityCreateSchema = z.object({
   source: z.string().nullable().optional(),
   contact_info: z.string().nullable().optional(),
   status: z
-    .enum(['in_progress', 'offered', 'accepted', 'rejected', 'withdrawn'])
+    .enum([
+      'in_progress',
+      'offered',
+      'accepted',
+      'rejected',
+      'withdrawn',
+      'declined',
+      'accepted_then_left',
+    ])
     .optional(),
   final_salary: z.string().nullable().optional(),
   final_benefits: z.string().nullable().optional(),

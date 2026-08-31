@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Opportunity, OpportunityStatus, InterviewRound } from '../types';
@@ -14,45 +14,89 @@ const STATUS_DOT: Record<OpportunityStatus, string> = {
   accepted: 'bg-teal-700',
   rejected: 'bg-red-700',
   withdrawn: 'bg-neutral-600',
+  declined: 'bg-slate-500',
+  accepted_then_left: 'bg-amber-500',
 };
+
+const PAGE_SIZE = 20;
 
 export default function OpportunityList() {
   useDocumentTitle('面试机会');
-  const [data, setData] = useState<{ opp: Opportunity; rounds: InterviewRound[] }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<{ opp: Opportunity; rounds: InterviewRound[] }[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [loadingPage, setLoadingPage] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterValue>('all');
   const [search, setSearch] = useState('');
+  // Refs to keep the latest filter/search in the loader without re-creating it.
+  const filterRef = useRef(filter);
+  const searchRef = useRef(search);
+  filterRef.current = filter;
+  searchRef.current = search;
 
-  useEffect(() => {
-    (async () => {
-      const opps = await api.opportunities.list();
-      const withRounds = await Promise.all(
-        opps.map(async (opp) => ({ opp, rounds: await api.rounds.list(opp.id) }))
-      );
-      setData(withRounds);
-      setLoading(false);
-    })();
-  }, []);
-
-  const filtered = useMemo(() => {
-    return data.filter(({ opp }) => {
-      if (filter !== 'all' && opp.status !== filter) return false;
-      if (search) {
-        const q = search.toLowerCase();
-        if (!opp.company_name.toLowerCase().includes(q) && !opp.position_name.toLowerCase().includes(q)) {
-          return false;
-        }
+  const loadPage = useCallback(
+    async (pageToLoad: number, mode: 'replace' | 'append') => {
+      setLoadingPage(true);
+      setError(null);
+      try {
+        const result = await api.opportunities.listPaged({
+          page: pageToLoad,
+          pageSize: PAGE_SIZE,
+          status: filterRef.current === 'all' ? undefined : filterRef.current,
+          search: searchRef.current.trim() || undefined,
+        });
+        const withRounds = await Promise.all(
+          result.items.map(async (opp) => ({
+            opp,
+            rounds: await api.rounds.list(opp.id),
+          }))
+        );
+        setItems((prev) =>
+          mode === 'append' ? [...prev, ...withRounds] : withRounds
+        );
+        setHasMore(result.hasMore);
+        setTotal(result.total);
+        setPage(result.page);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '加载失败');
+      } finally {
+        setLoadingPage(false);
+        setInitialLoading(false);
       }
-      return true;
-    });
-  }, [data, filter, search]);
+    },
+    []
+  );
 
-  if (loading) return <div className="text-neutral-500 text-sm">加载中…</div>;
+  // Initial load
+  useEffect(() => {
+    loadPage(1, 'replace');
+  }, [loadPage]);
+
+  // Reset on filter/search change
+  useEffect(() => {
+    loadPage(1, 'replace');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, search]);
+
+  if (initialLoading) {
+    return <div className="text-neutral-500 text-sm py-12 text-center">加载中…</div>;
+  }
+  if (error) {
+    return <div className="text-red-700 text-sm py-12 text-center">{error}</div>;
+  }
 
   return (
     <div className="max-w-5xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">面试机会</h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">面试机会</h1>
+          <p className="text-xs text-neutral-500 mt-1 tabular-nums">
+            共 {total} 条 · 当前第 {page} 页
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           <Link
             to="/opportunities/import"
@@ -117,7 +161,7 @@ export default function OpportunityList() {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {items.length === 0 ? (
         <div className="bg-white border border-neutral-200 rounded-xl p-10 shadow-xs text-center">
           <div className="flex justify-center mb-4">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-indigo-200" aria-hidden>
@@ -126,15 +170,46 @@ export default function OpportunityList() {
             </svg>
           </div>
           <div className="text-sm text-neutral-500">
-            {data.length === 0 ? '还没有面试机会，点右上角"新建"开始。' : '没有匹配的结果。'}
+            {total === 0 ? '还没有面试机会，点右上角"新建"开始。' : '没有匹配的结果。'}
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {filtered.map(({ opp, rounds }) => (
-            <OpportunityCard key={opp.id} opportunity={opp} rounds={rounds} />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col gap-3">
+            {items.map(({ opp, rounds }) => (
+              <OpportunityCard key={opp.id} opportunity={opp} rounds={rounds} />
+            ))}
+          </div>
+          {hasMore && (
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={() => loadPage(page + 1, 'append')}
+                disabled={loadingPage}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loadingPage ? (
+                  <>
+                    <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                    <span>加载中…</span>
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                    <span>加载更多</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+          {!hasMore && items.length > 0 && (
+            <div className="mt-6 text-center text-xs text-neutral-400">— 已显示全部 {total} 条 —</div>
+          )}
+        </>
       )}
     </div>
   );
