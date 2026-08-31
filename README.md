@@ -1,6 +1,17 @@
 # JobPulse
 
-JobPulse is a local-first job application tracker. Log applications, manage interview rounds, paste screenshots to auto-fill fields. Single SQLite file, single user, no cloud.
+**JobPulse** 是一个本地优先的个人面试追踪工具，写给自己用的。
+
+找工作那阵用过 Notion、Excel、几个 SaaS，都不太合适：Notion 太重、Excel 不会主动提醒、主流 SaaS 又覆盖不到"HR 说等回音"这种中文招聘流程里特有的状态。这个工具就是当时为了解决这些才动手写的。
+
+主要做的事：
+
+- 把投出去的每家公司、每场面试、每次结果都记在一张表里
+- Ctrl+V 粘贴面试邀约截图，AI 自动识别公司、岗位、时间、地点
+- 漏斗和来源分布一眼看到投递 → Offer 的转化、各招聘渠道占比
+- 等 HR 超过 3 天变黄、5 天变红，提醒你可能被默拒
+
+数据全在一个本地 SQLite 文件里，复制走就是完整备份，换台电脑接着用。
 
 <!-- 放一张仪表盘截图 -->
 
