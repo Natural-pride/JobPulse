@@ -109,6 +109,23 @@ export function createOpportunitiesRouter(db: Database.Database): Router {
     res.json(result);
   });
 
+  // GET /api/opportunities/sources
+  // Returns distinct, non-empty source values (sorted by frequency desc),
+  // so the form can offer "ever used" suggestions beyond the built-in set.
+  // Mounted BEFORE the `/:id` route so the literal path doesn't get caught.
+  router.get('/sources', (_req, res) => {
+    const rows = db
+      .prepare(
+        `SELECT source, COUNT(*) as n
+         FROM opportunities
+         WHERE source IS NOT NULL AND TRIM(source) != ''
+         GROUP BY source
+         ORDER BY n DESC, source ASC`
+      )
+      .all() as Array<{ source: string; n: number }>;
+    res.json(rows.map((r) => r.source));
+  });
+
   // GET /api/opportunities/:id
   router.get('/:id', (req, res) => {
     const id = Number(req.params.id);

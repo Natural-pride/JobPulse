@@ -269,6 +269,25 @@ describe('Opportunities pagination', () => {
     const res = await request(app).get('/api/opportunities?pageSize=200');
     expect(res.status).toBe(400);
   });
+
+  it('GET /sources returns distinct sources sorted by frequency', async () => {
+    const insert = db.prepare(
+      'INSERT INTO opportunities (company_name, position_name, source, status, created_at) VALUES (?, ?, ?, ?, ?)'
+    );
+    insert.run('A', 'A1', 'BOSS', 'in_progress', '2026-08-01 10:00:00');
+    insert.run('B', 'B1', 'BOSS', 'in_progress', '2026-08-02 10:00:00');
+    insert.run('C', 'C1', '朋友内推', 'in_progress', '2026-08-03 10:00:00');
+    insert.run('D', 'D1', '朋友内推', 'in_progress', '2026-08-04 10:00:00');
+    insert.run('E', 'E1', '朋友内推', 'in_progress', '2026-08-05 10:00:00');
+    insert.run('F', 'F1', 'V2EX', 'in_progress', '2026-08-06 10:00:00');
+    insert.run('G', 'G1', null, 'in_progress', '2026-08-07 10:00:00');
+    insert.run('H', 'H1', '', 'in_progress', '2026-08-08 10:00:00');
+
+    const res = await request(app).get('/api/opportunities/sources');
+    expect(res.status).toBe(200);
+    // Sorted by count desc: 朋友内推 (3) > BOSS (2) > V2EX (1)
+    expect(res.body).toEqual(['朋友内推', 'BOSS', 'V2EX']);
+  });
 });
 
 describe('Opportunities sort by interview time', () => {

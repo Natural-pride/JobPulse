@@ -60,6 +60,8 @@ export const api = {
       const suffix = qs.toString() ? `?${qs.toString()}` : '';
       return request<PagedOpportunities>(`/opportunities${suffix}`);
     },
+    /** Distinct source values used across all opportunities (sorted by frequency). */
+    listSources: () => request<string[]>(`/opportunities/sources`),
     get: (id: number) => request<Opportunity>(`/opportunities/${id}`),
     create: (data: Partial<Opportunity>) =>
       request<Opportunity>(`/opportunities`, {

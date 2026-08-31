@@ -7,7 +7,7 @@ import CityPicker, { type CityValue } from '../components/CityPicker';
 import SalaryInput from '../components/SalaryInput';
 import { getCities, findProvinceForCity } from '../lib/cityData';
 import useDocumentTitle from '../hooks/useDocumentTitle';
-import { useCustomSources } from '../hooks/useCustomSources';
+import { useAllSourceSuggestions } from '../hooks/useAllSourceSuggestions';
 
 type FormState = Omit<
   Opportunity,
@@ -167,9 +167,13 @@ export default function OpportunityForm() {
   const [firstInterviewFormat, setFirstInterviewFormat] = useState<RoundFormat>('online_video');
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  // Custom "来源" suggestions: remembered across sessions via localStorage.
-  const { custom: customSources, add: addCustomSource, remove: removeCustomSource } =
-    useCustomSources();
+  // Source suggestions: built-in + DB (all used) + localStorage custom.
+  const {
+    suggestions: allSourceSuggestions,
+    customFromStorage: customSources,
+    addCustom: addCustomSource,
+    removeCustom: removeCustomSource,
+  } = useAllSourceSuggestions(SOURCE_SUGGESTIONS);
   const [customSourceInput, setCustomSourceInput] = useState('');
 
   // Structured-field state (work_hours uses dropdown; benefits multi-select)
@@ -346,25 +350,31 @@ export default function OpportunityForm() {
             <div className="md:col-span-2">
               <Field label="来源">
                 <div className="space-y-2">
-                  {/* Row 1: built-in suggestions */}
+                  {/* Row 1: built-in + DB-sourced (system-wide) suggestions */}
                   <div className="flex flex-wrap gap-2">
-                    {SOURCE_SUGGESTIONS.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => update('source', s)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                          form.source === s
-                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                            : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
+                    {allSourceSuggestions.map((s) => {
+                      const isBuiltIn = SOURCE_SUGGESTIONS.includes(s);
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => update('source', s)}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                            form.source === s
+                              ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                              : isBuiltIn
+                              ? 'border-slate-200 text-slate-600 hover:border-slate-300'
+                              : 'border-dashed border-slate-300 text-slate-600 hover:border-slate-400'
+                          }`}
+                          title={isBuiltIn ? '内置建议' : '数据库已有'}
+                        >
+                          {s}
+                        </button>
+                      );
+                    })}
                     <input
                       value={
-                        SOURCE_SUGGESTIONS.includes(form.source ?? '') &&
+                        allSourceSuggestions.includes(form.source ?? '') &&
                         !customSourceInput
                           ? ''
                           : customSourceInput || form.source || ''
@@ -375,7 +385,7 @@ export default function OpportunityForm() {
                       }}
                       onBlur={() => {
                         const v = customSourceInput.trim();
-                        if (v && !SOURCE_SUGGESTIONS.includes(v)) {
+                        if (v && !allSourceSuggestions.includes(v)) {
                           addCustomSource(v);
                         }
                         setCustomSourceInput('');
@@ -385,7 +395,7 @@ export default function OpportunityForm() {
                           e.preventDefault();
                           const v = customSourceInput.trim();
                           if (v) {
-                            if (!SOURCE_SUGGESTIONS.includes(v)) addCustomSource(v);
+                            if (!allSourceSuggestions.includes(v)) addCustomSource(v);
                             update('source', v);
                             setCustomSourceInput('');
                           }
@@ -395,10 +405,10 @@ export default function OpportunityForm() {
                       placeholder="其他来源…"
                     />
                   </div>
-                  {/* Row 2: remembered custom sources (localStorage) */}
+                  {/* Row 2: localStorage custom (with × to remove) */}
                   {customSources.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1.5 pl-1">
-                      <span className="text-[11px] text-slate-400 mr-0.5">最近用过：</span>
+                      <span className="text-[11px] text-slate-400 mr-0.5">本机记忆：</span>
                       {customSources.map((s) => (
                         <span
                           key={s}
@@ -430,10 +440,10 @@ export default function OpportunityForm() {
                       ))}
                     </div>
                   )}
-                  {/* Save reminder: when user types a new value, persist it. */}
-                  {customSourceInput && !SOURCE_SUGGESTIONS.includes(customSourceInput) && (
+                  {/* Save reminder */}
+                  {customSourceInput && !allSourceSuggestions.includes(customSourceInput) && (
                     <p className="text-[11px] text-slate-400 pl-1">
-                      按 Enter 或失焦后自动保存到"最近用过"
+                      按 Enter 或失焦后保存到本机记忆
                     </p>
                   )}
                 </div>
