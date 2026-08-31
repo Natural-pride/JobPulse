@@ -1,0 +1,34 @@
+[Unit]
+Description=JobPulse backend (Express + SQLite)
+After=network.target
+
+[Service]
+Type=simple
+User=jobpulse
+Group=jobpulse
+WorkingDirectory=/home/jobpulse/JobPulse
+
+# Load env from .env (PORT, ZHIPU_API_KEY, etc.)
+EnvironmentFile=/home/jobpulse/JobPulse/backend/.env
+
+# Run the compiled server
+ExecStart=/usr/bin/node backend/dist/server.js
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/jobpulse/JobPulse/backend/data /home/jobpulse/backups
+
+# Logs go to journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jobpulse
+
+[Install]
+WantedBy=multi-user.target
